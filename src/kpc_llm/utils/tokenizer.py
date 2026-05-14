@@ -3,21 +3,49 @@
 行话叫Tokenizing txt 词元化文本文件，或和叫文本分词
 """
 
+import logging
 import os 
 import re
+from secrets import token_urlsafe
+import token
+
+from sympy.strategies.core import switch
 from kpc_llm.utils.dataloader import getTxtStr,getVerdictTxtStr
 from kpc_llm.utils.logger import getlogger
 
 logger = getlogger()
 
+
 class Tokenizer:
-    def __init__(self) -> None:
-        pass
+    VOCAB = None
+    def __init__(self,fileName:str,subDir:str) -> None:
+        """
+        把文本训练数据的词表创建并存储到类内部
+        """
+        self.fileName = fileName
+        self.subDir = subDir
+        Tokenizer.VOCAB = Tokenizer.converTokens2Vocab(fileName,subDir)
+        
+
+
+    @staticmethod
+    def converTokens2Vocab(fileName:str,subDir:str) -> dict:
+        """
+        把训练文本转成词表
+        """
+        # 获取所有词汇的词表,很简单就是去重，然后按规则排序默认用sorted按照Unicode排序 step 1
+        words = Tokenizer.getPreProcessed(fileName,subDir)
+        words = sorted(set(words))
+        logger.info(f'getVocab fileName length : {len(words)}')
+        # 给所有词汇排序编码的dict step 2
+        vocabInner = { token:id for id,token in enumerate(words) }
+        return vocabInner
+
     
     @staticmethod
     def preProcess(raw_txt:str):
         """
-        预处理原始字符串 step1
+        预处理原始字符串 step 1
         """
         # r‘’写法让 \n \t \s 这种回车 tab 和 空格的表示失效 \就是\本身 。不用\\表示
         # 如果要用 \n  则 类似  r'123' + '\n'
@@ -33,7 +61,7 @@ class Tokenizer:
     @staticmethod
     def getPreProcessed(fileName:str,saveSubDir: str = None):
         """
-        从文件中获取字符串并处理成合适进行词元处理的list step2
+        从文件中获取字符串并处理成合适进行词元处理的list step 2_1
         """
         # 从文件获取原始文本字符串
         raw_txt = getTxtStr(fileName,saveSubDir)
@@ -42,16 +70,45 @@ class Tokenizer:
     @staticmethod
     def getPreTheVerdictProcessed():
         """
-        从文件中获取字符串并处理成合适进行词元处理的list step2
+        从文件中获取字符串并处理成合适进行词元处理的list step 2_1
         """
         # 从文件获取原始文本字符串
         raw_txt = getVerdictTxtStr()
         return Tokenizer.preProcess(raw_txt)
 
+    def encode(self):
+        """
+        把训练数据的文章的token变成 token ID，一个token ID 相当于词表这个张量空间里的一个分量。
+        最终把文章转换成一个张量空间，可以输入 LLM的layers进行训练，行话这种张量的输入不叫输入叫嵌入到训练模型层。
+        所以嵌入训练数据必须是首先把数据处理成张量形式的。
+        """
 
-if __name__ == "__main__":
+        # 把文章分词数组变成 toke ID的 数组 step 1
+        #VOCAB.items() 方法把dict 变成 可迭代对象
+        tokens = Tokenizer.getPreProcessed(self.fileName,self.subDir)
+        logger.info(f' Tokenizer.VOCAB year : {Tokenizer.VOCAB.get('year')}')
+        tokenIds = [Tokenizer.VOCAB.get(word) for word in tokens ]
+        return tokenIds
+
+    def decode(self,tokeIds:list) -> list:
+        """
+        通过tokenId 返回 Token列表
+        """
+        idTokens = { id:token for token,id in Tokenizer.VOCAB.items()}
+        tokens = [idTokens.get(tokenId) for tokenId in tokeIds]
+        return tokens
+    
+    def decode2Txt(self,tokeIds:list) -> str:
+        tokens = self.decode(tokeIds)
+        outTxt = " ".join(tokens)
+        #正则表达式，所有特殊标点符号前面的空格都用替换去掉
+        outTxt = re.sub(r'\s+([,.?!"()\'])', r'\1', outTxt)
+        return outTxt
+
+
+def test_getPreProcessed():
     """
-    测试用
+    测试getPreProcessed
     """
     try:
         words = Tokenizer.getPreProcessed('the-verdict.txt','data')
@@ -60,4 +117,32 @@ if __name__ == "__main__":
         logger.info(f'测试成功')
     except Exception as e :
         logger.debug(f'出现错误 : {e}',exc_info=True)
+
+def test_encode_decode():
+    """
+    测试getPreProcessed
+    """
+    try:
+        tokenizer = Tokenizer('the-verdict.txt','data')
+        tokenIds = tokenizer.encode()
+        tokens = tokenizer.decode(tokenIds)
+        outTxt = tokenizer.decode2Txt(tokenIds)
+        logger.info(f'处理后的tokenIds长度 : {len(tokenIds)}')
+        logger.info(f'测试看看处理后的前10个ids : {tokenIds[:10]}')
+        logger.info(f'处理后的tokens长度 : {len(tokens)}')
+        logger.info(f'测试看看处理后的前10个tokens : {tokens[:10]}')
+        logger.info(f'测试看看处理后的文本 : {outTxt[:100]}')
+        logger.info(f'测试成功')
+    except Exception as e :
+        logger.debug(f'出现错误 : {e}',exc_info=True)
+
+
+if __name__ == "__main__":
+   test_unit = ["test_encode_decode"]
+   for case in test_unit:
+        match case:
+            case "test_getPreProcessed":
+                test_getPreProcessed()
+            case "test_encode_decode":
+                test_encode_decode()
 
