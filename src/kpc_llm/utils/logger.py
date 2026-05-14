@@ -6,6 +6,7 @@ from pathlib import Path
 # ====================== 日志配置（企业级标准） ======================
 def getlogger(name="kcp_build_llm"):
     # 1. 创建日志器
+    # step1 创建未设置的日志对象
     logger = logging.getLogger(name)
     logger.setLevel(logging.DEBUG)  # 全局最低级别
     logger.handlers.clear()  # 避免重复打印
@@ -19,8 +20,9 @@ def getlogger(name="kcp_build_llm"):
 
     # ====================== 输出 1：控制台打印 ======================
     console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.INFO)
+    console_handler.setLevel(logging.DEBUG)
     console_handler.setFormatter(log_formatter)
+    # step2 设置控制台打印格式和日记级别
     logger.addHandler(console_handler)
 
     # ====================== 输出 2：文件输出（按天分割） ======================
@@ -37,6 +39,7 @@ def getlogger(name="kcp_build_llm"):
     )
     file_handler.setLevel(logging.DEBUG)
     file_handler.setFormatter(log_formatter)
+    # step3  设置文件按天分割处理命名
     logger.addHandler(file_handler)
 
     return logger

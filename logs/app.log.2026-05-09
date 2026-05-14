@@ -1,0 +1,9 @@
+2026-05-09 12:32:52 | INFO     | dataloader.py:9 | E:\AIAgentDev\KpcBuildLLM
+2026-05-09 12:34:30 | INFO     | dataloader.py:9 | E:\AIAgentDev\KpcBuildLLM
+2026-05-09 12:37:56 | INFO     | dataloader.py:9 | root  : E:\AIAgentDev\KpcBuildLLM
+2026-05-09 13:32:51 | INFO     | dataloader.py:11 | root_path : E:\AIAgentDev\KpcBuildLLM
+2026-05-09 13:33:17 | INFO     | dataloader.py:11 | root_path : E:\AIAgentDev\KpcBuildLLM
+2026-05-09 15:16:02 | INFO     | dataloader.py:12 | root_path : E:\AIAgentDev\KpcBuildLLM
+2026-05-09 15:16:17 | INFO     | dataloader.py:12 | root_path : E:\AIAgentDev\KpcBuildLLM
+2026-05-09 15:16:17 | INFO     | preprocess_raw_txt.py:33 | 处理后的字符串长度 : 4690
+2026-05-09 15:16:17 | INFO     | preprocess_raw_txt.py:34 | 测试看看处理后的前10个字符串 : ['I', 'HAD', 'always', 'thought', 'Jack', 'Gisburn', 'rather', 'a', 'cheap', 'genius']

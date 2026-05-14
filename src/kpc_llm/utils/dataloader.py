@@ -11,9 +11,18 @@ root = here()
 # 输出日志
 logger.info(f"root_path : {root}")
 
+def downVerdictFile():
+    """
+    下载并返回 the-verdict.txt 数据集的路径 step1
+    """
+    fileUrl = ("https://raw.githubusercontent.com/rasbt/"
+               "LLMs-from-scratch/main/ch02/01_main-chapter-code/"
+               "the-verdict.txt")
+    return getFileFromUrl(fileUrl, "data")
+
 def getFileFromUrl(fileUrl: str, saveSubDir: str = None):
     """
-    从 URL 下载文件到本地目录，按下载名称保存
+    从 URL 下载文件到本地目录，按下载名称保存 step2
 
     Args:
         fileUrl: 文件下载地址
@@ -43,25 +52,23 @@ def getFileFromUrl(fileUrl: str, saveSubDir: str = None):
     return fileLocalSavePath
 
 
-def downVerdictFile():
-    """
-    下载并返回 the-verdict.txt 数据集的路径
-    """
-    fileUrl = ("https://raw.githubusercontent.com/rasbt/"
-               "LLMs-from-scratch/main/ch02/01_main-chapter-code/"
-               "the-verdict.txt")
-    return getFileFromUrl(fileUrl, "data")
-
 def getVerdictTxtStr():
     """
-    从data/the-verdict.txt数据集文件读取字符串
+    从data/the-verdict.txt数据集文件读取字符串 step3
     """
+    downVerdictFile()
     return getTxtStr('the-verdict.txt','data')
     
     
 def getTxtStr(fileName:str,saveSubDir: str = None):
     """
-    从指定的根目录的文件夹里获取txt文件内容的字符串
+    从指定的根目录的文件夹里获取txt文件内容的字符串 step4
+     Args:
+        fileName: 文件名
+        saveSubDir: 保存的子目录，相对于项目根目录名称
+
+    Returns:
+        文件的原始文本内容
     """
 
     if saveSubDir:
