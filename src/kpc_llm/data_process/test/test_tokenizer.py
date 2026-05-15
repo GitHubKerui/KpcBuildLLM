@@ -1,4 +1,4 @@
-from kpc_llm.utils.tokenizer import Tokenizer
+from kpc_llm.data_process.tokenizer import Tokenizer
 from kpc_llm.utils.logger import getlogger
 
 logger = getlogger()

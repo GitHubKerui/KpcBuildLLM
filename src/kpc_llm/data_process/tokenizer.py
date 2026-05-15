@@ -8,7 +8,7 @@ import os
 import re
 import token
 
-from kpc_llm.utils.dataloader import getTxtStr,getVerdictTxtStr
+from kpc_llm.data_process.textloader import getTxtStr,getVerdictTxtStr
 from kpc_llm.utils.logger import getlogger
 
 logger = getlogger()
