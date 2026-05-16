@@ -18,6 +18,7 @@ class KpcLLMData(Dataset):
         super().__init__()
         self.input_ids = []
         self.target_ids = []
+        self.chunk_len = chunk_len
         tokens_ids = tokenizer.encode(text,allowed_special={'<|endoftext|>'})
 
         for i in range(0,len(tokens_ids)-chunk_len,stride):
