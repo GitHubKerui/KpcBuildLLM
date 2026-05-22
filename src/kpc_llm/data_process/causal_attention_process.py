@@ -22,12 +22,13 @@ def setUpNegativeInfMask(attention_scores,module:nn.Module):
     '''
     通过上三角全1把负无穷矩阵对角线上半部设置为全部负无穷，下半部为0，然后通过加法计算，遮盖上三角部分的注意力分数为负无穷，也就是上半部负无穷设置
     '''
-    context_len = attention_scores.shape[0]
+    #因为注意力的mask是二维的，所以一定是以倒数第二个维度来做的，最后一个维度是单个词元的嵌入空间维度。
+    context_len = attention_scores.shape[-2]
     zeroMatrix = ones(context_len,context_len)
     #triangle + upper = triu 上三角不包括对角线设置1的方法,diagonal = 1 是指的包含的对角线往右移动
     triuNegativeInfinityMask = triu(zeroMatrix, diagonal = 1)
-    module.register_buffer("triuNegativeInfinityMask",triuNegativeInfinityMask)
-    attention_scores_masked = attention_scores.masked_fill(module.triuNegativeInfinityMask.bool(),-inf)
+    module.register_buffer("mask",triuNegativeInfinityMask)
+    attention_scores_masked = attention_scores.masked_fill(module.mask.bool(),-inf)
     return attention_scores_masked    
 
 if __name__ =='__main__':

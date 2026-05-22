@@ -9,7 +9,7 @@ def add_drop_out(attention_weights,dropRate):
     在注意力的权重计算后加上drop_out来减少训练过程中的overfitting，一般比例设置0.1-0.5
     在全one矩阵的基础上随机drop位置被归零，留存下来的1会 (1 * 1/dropRate)，最后和原始矩阵相乘，不是dot乘
     '''
-    dropoutMask= nn.Dropout(0.5)
+    dropoutMask= nn.Dropout(dropRate)
     dropOutWeights = dropoutMask(attention_weights)
     return dropOutWeights
 
