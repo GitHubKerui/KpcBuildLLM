@@ -30,8 +30,11 @@ class TokenId2InputEnbedding():
         vocab_size = tiktokenizer.tiktokenizer.n_vocab
         #全词表的嵌入层的随机初始化，随机抽样的分向量服从正态分布，方差是 1/embedding_dim ：1/嵌入维度
         token_embedding_layer = torch.nn.Embedding(vocab_size, embedding_dim)
+        logger.info(f'vocab_size shape : {vocab_size}')
         #这里做了 one-hot的点积，做了look up 操作
         token_input_embedding = token_embedding_layer(token_input)
+        
+        logger.info(f'token_input shape : {token_input.shape}')
         pos_embedding_layer = torch.nn.Embedding(chunk_len, embedding_dim)
         #这里torch.arange(tokens_len)的shape本质上跟token_input一样，但是0到tokens_len的排序list
         postion_input_embedding = pos_embedding_layer(torch.arange(chunk_len))
