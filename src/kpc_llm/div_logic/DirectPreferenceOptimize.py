@@ -39,6 +39,7 @@ with torch.no_grad(): # 参考模型不需要计算梯度
     log_prob_ref_l = log_probs_ref[0, y_l_idx]
     
     print(f"基座 Logits: {logits_ref.tolist()[0]}")
+    print(f"基座 log_probs_ref: {log_probs_ref.tolist()}")
     print(f"基座 Chosen (Index 1) Log-Prob: {log_prob_ref_w.item():.3f}")
     print(f"基座 Rejected (Index 2) Log-Prob: {log_prob_ref_l.item():.3f}")
 
@@ -50,6 +51,7 @@ log_prob_theta_w = log_probs_theta[0, y_w_idx]
 log_prob_theta_l = log_probs_theta[0, y_l_idx]
 
 print(f"策略 Logits: {logits_theta.tolist()[0]}")
+print(f"策略 log_probs_theta: {log_probs_theta.tolist()[0]}")
 print(f"策略 Chosen (Index 1) Log-Prob: {log_prob_theta_w.item():.3f}")
 print(f"策略 Rejected (Index 2) Log-Prob: {log_prob_theta_l.item():.3f}")
 
