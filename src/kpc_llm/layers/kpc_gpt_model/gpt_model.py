@@ -27,8 +27,8 @@ class KpcGPTModel(nn.Module):
     def forward(self,input):
         btch,cntext_lnth =  x.shape
         input_tokens = self.tkn_emb(input)
-        x = input_tokens + self.pstn_emb(arange(cntext_lnth,device=input.device))
-        x = self.drop(x)
+        input_tokens = input_tokens + self.pstn_emb(arange(cntext_lnth,device=input.device))
+        x = self.drop(input_tokens)
         x = self.trnsf_lyrs(x)
         x = self.final_norml(x)
         out = self.out_liner(x)
