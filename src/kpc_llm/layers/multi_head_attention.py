@@ -20,10 +20,13 @@ class Multi_Head_Attention(nn.Module):
         self.single_head_d = single_head_d
         self.in_d = in_d
         self.out_d = num_head * single_head_d
+        # nn.Linear(列，行) =  A的transpose(AT) ,因为 out = A * x_input + bias 所以也是  out = x_input * AT + bias 所以 行 才是 nn.Linear的out_dim
+        # pytorch nn.Linear 采用的是  out = x_input * AT + bias 
+        # nn.linear 是一个 affine linear 仿射线性变换， 相仿线性变换。做了偏移的线性变换，严格线性变换不能移动0点
         self.W_q = nn.Linear(in_d,self.out_d,qkv_bias)
         self.W_k = nn.Linear(in_d,self.out_d,qkv_bias)
         self.W_v = nn.Linear(in_d,self.out_d,qkv_bias)
-        #输入的维度暂时设置跟输入的 out_d一样，这里是com多个head的维度，自然是out_d
+        #输入的维度暂时设置跟输出的 out_d一样，这里是combine 组合多个head的维度，自然是out_d
         self.W_com_multihead = nn.Linear(self.out_d,self.out_d,qkv_bias)
 
     def forward(self,input_batch):
@@ -31,20 +34,29 @@ class Multi_Head_Attention(nn.Module):
         这里的input_batch应该是个批量的input所以这里的input_batch的shape是[batch,input_out_d,in_d]
         in_d和初始化函数定义的in_d一样
         '''
-        #i_out_d必须跟 self.in_d一样才可以保证 nn.Linear输出是out_d
-        num_batch,num_token,i_out_d = input_batch.shape
+        #input_token_dim必须跟 self.in_d一样才可以保证 nn.Linear输出是out_d
+        num_batch,num_token,input_token_dim = input_batch.shape
 
-        #输出后样本维度是out_d一批的样本数是num_token了
+        #输出后样本维度是out_d一批的样本数是num_token了，token的维度变成了新的out_d的维度。特征空间变了
         queries = self.W_q(input_batch)
         keys = self.W_k(input_batch)
         values = self.W_v(input_batch)
 
         # unroll 展开最后的out_d维度为多头和单头维度的乘积，Tensorflow框架用reshap ，这里用view
+        # 特征空间 又被分成了多个组，一个头就是一组特征空间维度，组数就是 所谓头数。 
+        # 不同的组分别从各自的空间中去路径寻优，因为现实中一句话的续写可以有多种方式，叫同义句，这个多头空间对应的是这个特征的捕捉。
         queries = queries.view(num_batch,num_token,self.num_head,self.single_head_d)
         keys = keys.view(num_batch,num_token,self.num_head,self.single_head_d)
         values = values.view(num_batch,num_token,self.num_head,self.single_head_d)
 
-        #头数 1位置 和一个批次的token数位置 2转置一下
+        """ 
+        #这里要把 token数量 和 头数交换位置 ：原因如下
+        多头注意力机制（Multi-Head Attention）的精妙所在。
+        比如：XX.transpose(1,2)
+        交换前 (32, 50, 8, 64)：意思是，这句话有 50 个词，每个词里面拆出了 8 个头。此时，不同的“头”被塞在每个词的内部。
+        交换后 (32, 8, 50, 64)：意思是，我把这 8 个头彻底剥离出来。现在看起来，就像是有 8 个独立的平行世界（8 个 Head），每个世界里都有一句包含了 50 个词、每个词维度是 64 的句子。
+        这样交换之后，PyTorch 就可以让这 8 个头并行去计算各自的 Attention 矩阵，互不干扰。
+        """
         queries.transpose(1,2)
         keys.transpose(1,2)
         values.transpose(1,2)
@@ -52,9 +64,9 @@ class Multi_Head_Attention(nn.Module):
         #计算 attention_scores 因为是超过2维的矩阵，不能用.T来转置
         logger.info(f'keys shape : {keys.shape}')
         attention_scores = queries @ keys.transpose(2,3)
-        #添加因果注意力
+        #添加因果注意力，防止未来词元被窥探影响训练
         attention_causal_scores = setUpNegativeInfMask(attention_scores,self)
-        #scale得到归一化的分数，权重
+        #scale得到归一化的分数，权重，
         attention_causal_weights = softmax(attention_causal_scores / queries.shape[-1]**0.5 ,dim = -1)
         #添加dropout随机关闭部分神经元
         attention_causal_drop_weights = add_drop_out(attention_causal_weights,0.5)
