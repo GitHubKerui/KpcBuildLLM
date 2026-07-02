@@ -35,6 +35,19 @@ dev-dependencies = [
 line-length = 120
 target-version = "py312"
 
+[tool.basedpyright]
+typeCheckingMode = "basic"
+venvPath = "."
+venv = ".venv"
+reportUnknownMemberType = false
+reportUnknownParameterType = false
+reportUnknownVariableType = false
+reportUnannotatedClassAttribute = false
+reportMissingParameterType = false
+reportUntypedBaseClass = false
+reportAny = false
+reportUnusedCallResult = false
+
 [tool.black]
 line-length = 120
 target-version = ["py312"]

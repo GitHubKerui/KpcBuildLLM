@@ -54,3 +54,9 @@ data/*.bin
 # OS
 .DS_Store
 Thumbs.db
+
+# reference document dir
+LLMs-from-scratch-main
+data
+notebooks
+.uploads
