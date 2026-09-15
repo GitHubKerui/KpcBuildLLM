@@ -34,7 +34,9 @@ class SelfAttentionV2(Module):
 
     def getAttentionWeight(self,input):
         '''
-        step 2 scale 归一化，缩放，正则化，分布空间缩放，dot计算后的样本方差量值是维度d，标差是 d**0.5
+        step 2 scale 归一化，normalization，正态化，缩放，分布空间缩放，dot计算后的样本方差量值是维度d，标差是 d**0.5，
+        因为每个token样本的方差是1 ，那么N个样本的点乘的样本的方差 是 1^2 *N = 1 *N = N 等于token的个数，也就是自注意力方阵的dim。
+        所以做归一化 必须除以标准差，等于除，dim^0.5,当然这之前
         '''
         attention_scores = self.getAttentionScores(input)
         dim_num = attention_scores.shape[-1]

@@ -60,3 +60,10 @@ LLMs-from-scratch-main
 data
 notebooks
 .uploads
+
+#others
+coach
+.codebuddy
+.pytest_cache
+docs
+tests

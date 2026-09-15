@@ -8,11 +8,13 @@ logger = getlogger()
 
 def setUpZeroMask(attention_scores,module:nn.Module):
     '''
+    目标：使得矩阵上三角部分为0，下三角部分不变，
     通过下三角全1把对角线上半部设置为0来与非计算，遮盖上三角部分的注意力分数，也就是上三角归零计算
+    自注意力分数是词元和上下文的关系（方阵）,最后是一定是个方阵，方阵维度等于上下文的--“词元长度”。
     '''
-    context_len = attention_scores.shape[0]
+    context_len = attention_scores.shape[-2]
     oneMatrix = ones(context_len,context_len)
-    #triangle + lower =tril 下三角包括对角线保留其他设置为0
+    #triangle + lower =tril 下三角包括对角线位置的1保留，其他设置为0
     trilOneMask = tril(oneMatrix)
     module.register_buffer("trilOneMask",trilOneMask)
     masked_attention_scores = attention_scores * module.trilOneMask

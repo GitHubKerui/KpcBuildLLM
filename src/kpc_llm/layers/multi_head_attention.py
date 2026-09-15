@@ -57,9 +57,9 @@ class Multi_Head_Attention(nn.Module):
         交换后 (32, 8, 50, 64)：意思是，我把这 8 个头彻底剥离出来。现在看起来，就像是有 8 个独立的平行世界（8 个 Head），每个世界里都有一句包含了 50 个词、每个词维度是 64 的句子。
         这样交换之后，PyTorch 就可以让这 8 个头并行去计算各自的 Attention 矩阵，互不干扰。
         """
-        queries.transpose(1,2)
-        keys.transpose(1,2)
-        values.transpose(1,2)
+        queries = queries.transpose(1,2)
+        keys = keys.transpose(1,2)
+        values = values.transpose(1,2)
 
         #计算 attention_scores 因为是超过2维的矩阵，不能用.T来转置
         logger.info(f'keys shape : {keys.shape}')
