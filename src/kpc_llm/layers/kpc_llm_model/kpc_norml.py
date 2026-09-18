@@ -2,13 +2,13 @@
 from torch import nn,Tensor,manual_seed,ones,zeros,sqrt
 
 class KpcNormal(nn.Module):
-    def __init__(self,unbiased=False) -> None:
+    def __init__(self,emb_dim,unbiased=False) -> None:
         super().__init__()
         self.unbiased = unbiased
         self.eps = 1e-5
         # 个人觉得这个weight 和 bias 没必要加 因为在最后一层有linear层做特征捕捉。这个没必要
-        # self.weight = nn.Parameter(ones(emb_dim))
-        # self.bias = nn.Parameter(zeros(emb_dim))
+        self.weight = nn.Parameter(ones(emb_dim))
+        self.bias = nn.Parameter(zeros(emb_dim))
 
     def forward(self,x):
         # 1 算出最后一个维度的均值 
@@ -19,5 +19,5 @@ class KpcNormal(nn.Module):
         # 3 整个网络拉回中心0点，均方差 1.
         x_norm = (x - mean) / varsqrt
         # 这里在最后一层有个 linear层 我觉得没必要加 这个
-        # out = self.weight * x_norm + self.bias
-        return x_norm
+        out = self.weight * x_norm + self.bias
+        return out

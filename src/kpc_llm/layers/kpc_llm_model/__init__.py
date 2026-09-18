@@ -12,13 +12,15 @@ T0.1 之前，这个项目里并行存在两套 GPT 实现：
 """
 
 from kpc_llm.layers.kpc_llm_model.kpc_llm_config import KPC_GPT_CONFIG_124M
-from kpc_llm.layers.kpc_llm_model.kpc_llm_model import KpcGPTModel
+from kpc_llm.layers.kpc_llm_model.kpc_llm_model import KpcLLMModel
+from kpc_llm.layers.kpc_llm_model.kpc_norml import KpcNormal
 from kpc_llm.layers.kpc_llm_model.transformer_block.transformer_block import KpcTransformerBlock
 from kpc_llm.layers.kpc_llm_model.transformer_block.multi_head_attention import MultiHeadAttention
 
 __all__ = [
     "KPC_GPT_CONFIG_124M",
-    "KpcGPTModel",
+    "KpcLLMModel",
+    "KpcNormal",
     "KpcTransformerBlock",
     "MultiHeadAttention"
 ]

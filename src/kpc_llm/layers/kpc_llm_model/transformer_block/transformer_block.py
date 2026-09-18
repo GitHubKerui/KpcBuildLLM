@@ -20,8 +20,8 @@ class KpcTransformerBlock(nn.Module):
         self.drop = nn.Dropout(cfg["drop_rt"])
         self.attention= MultiHeadAttention()
         # normal 1 2它们各自拥有独立的、需要学习的参数（Weights 和 Bias）,归属于不同的学习层，所以必须要两个，
-        self.normal1 = KpcNormal()
-        self.normal2 = KpcNormal()
+        self.normal1 = KpcNormal(cfg["emb_dim"])
+        self.normal2 = KpcNormal(cfg["emb_dim"])
         self.ff = KpcFeedForward(embed_dim=cfg["emb_dim"])
 
     def forward(self,x):
