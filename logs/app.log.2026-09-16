@@ -1,0 +1,10 @@
+2026-09-15 20:36:50 | INFO     | textloader.py:12 | root_path : E:\AIAgentDev\KpcBuildLLM
+2026-09-15 20:38:01 | INFO     | textloader.py:12 | root_path : E:\AIAgentDev\KpcBuildLLM
+2026-09-15 20:38:13 | INFO     | textloader.py:12 | root_path : E:\AIAgentDev\KpcBuildLLM
+2026-09-15 20:43:07 | INFO     | textloader.py:12 | root_path : E:\AIAgentDev\KpcBuildLLM
+2026-09-15 20:45:06 | INFO     | textloader.py:12 | root_path : E:\AIAgentDev\KpcBuildLLM
+2026-09-15 20:45:18 | INFO     | textloader.py:12 | root_path : E:\AIAgentDev\KpcBuildLLM
+2026-09-16 07:37:37 | INFO     | tiktokenizer.py:28 | tiktoken 的版本 : 0.12.0
+2026-09-16 07:37:37 | INFO     | tiktokenizer.py:29 | tiktoken 的__version__版本 : 0.12.0
+2026-09-16 07:37:37 | INFO     | tiktokenizer.py:30 | use_sample_tiktoken_encode 的测试 : [464, 3329, 19606, 318, 25431, 832, 262, 5667, 11, 13092, 15360, 16187, 319, 262, 2323, 13, 50256, 554, 262, 19155, 18250, 8812, 2114, 286, 617, 34680, 27271, 13]
+2026-09-16 07:37:37 | INFO     | tiktokenizer.py:31 | use_sample_tiktoken_decode 的测试 : The morning sunlight is filtering through the leaves, casting dancing shadows on the ground.<|endoftext|> In thesunlit terraces of someunknownPlace.

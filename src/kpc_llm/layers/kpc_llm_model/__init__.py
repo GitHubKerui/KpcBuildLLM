@@ -11,14 +11,14 @@ T0.1 之前，这个项目里并行存在两套 GPT 实现：
 这几个名字继续对外导出，以免打断既有引用。
 """
 
-from kpc_llm.layers.kpc_gpt_model.config_model import KPC_GPT_CONFIG_124M
-from kpc_llm.layers.kpc_gpt_model.gpt_model import KpcGPTModel
-from kpc_llm.layers.kpc_gpt_model.gpt_norml import KpcFinalNormal
-from kpc_llm.layers.kpc_gpt_model.gpt_trnsf_block import KpcTransformerBlock
+from kpc_llm.layers.kpc_llm_model.kpc_llm_config import KPC_GPT_CONFIG_124M
+from kpc_llm.layers.kpc_llm_model.kpc_llm_model import KpcGPTModel
+from kpc_llm.layers.kpc_llm_model.transformer_block.transformer_block import KpcTransformerBlock
+from kpc_llm.layers.kpc_llm_model.transformer_block.multi_head_attention import MultiHeadAttention
 
 __all__ = [
     "KPC_GPT_CONFIG_124M",
     "KpcGPTModel",
     "KpcTransformerBlock",
-    "KpcFinalNormal",
+    "MultiHeadAttention"
 ]
