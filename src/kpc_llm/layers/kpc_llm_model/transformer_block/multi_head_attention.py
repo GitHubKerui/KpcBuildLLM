@@ -19,8 +19,10 @@ class MultiHeadAttention(nn.Module):
         self.qkv_bias = qkv_bias
         #真正的token_d单独一个token的embedding维度
         # self.embed_dim = embed_dim
-        # nn.Linear(列，行) =  A的transpose(AT) ,因为 out = A * x_input + bias 所以也是  out = x_input * AT + bias 所以 行 才是 nn.Linear的out_dim
-        # pytorch nn.Linear 采用的是  out = x_input * AT + bias 
+        # 设 nn.Linear(in，out) =  A_T(in,out) 
+        # 因为pytorch nn.Linear 采用的是 out = x_input(x,in) @ A_T(in,out) + bias 这里的 @ 就是点积运算，内积法则
+        # 这里的@和数学种的点积运算，内积法则是一致的。(点积运算只针对度量空间中的向量空间，内积法则可以针对度量空间中的其他空间类型)
+        # 所以out = x_out(x,out) + bias
         # nn.linear 是一个 affine linear 仿射线性变换， 相仿线性变换。做了偏移的线性变换，严格线性变换不能移动0点
         # self.W_q = nn.Linear(self.embed_dim,self.embed_dim,qkv_bias)
         # self.W_k = nn.Linear(self.embed_dim,self.embed_dim,qkv_bias)
@@ -39,7 +41,6 @@ class MultiHeadAttention(nn.Module):
         self.W_q = nn.Linear(embed_dim,embed_dim,self.qkv_bias)
         self.W_k = nn.Linear(embed_dim,embed_dim,self.qkv_bias)
         self.W_v = nn.Linear(embed_dim,embed_dim,self.qkv_bias)
-
 
         #输出后样本维度是out_d一批的样本数是num_token了，token的维度变成了新的out_d的维度。特征空间变了
         queries = self.W_q(input_batch)
@@ -68,24 +69,31 @@ class MultiHeadAttention(nn.Module):
 
         #计算 attention_scores 因为是超过2维的矩阵，不能用.T来转置
         logger.info(f'keys shape : {keys.shape}')
+        # queries (32, 8, 50, 64) @ keys.transpose(2,3) (32, 8, 64, 50) = (32, 8, 50，50)
+        # 注意力分数的本质是token间的特征结构关系通过点积@ ,matmul进行power放大，
+        # 空间位置相似的会被放大，空间位置差距大的会被缩小，达到放大重要特征，过滤噪声特征的目的。
+        # 但是为了保留局部子空间的特征关系，必须分成多头子空间来计算，
+        # 如果仅仅是放在全部单头空间来计算注意力分数，单头高权重特征的2次方计算会压制子空间特征，导致子空间的一些必要特征被过滤。
         attention_scores = queries @ keys.transpose(2,3)
         #添加因果注意力，防止未来词元被窥探影响训练
         attention_causal_scores = setUpNegativeInfMask(attention_scores,self)
         # logger.info(f'attention_causal_scores : {attention_causal_scores}')
-        #scale得到归一化的分数，权重，
+        # scale得到归一化的分数，权重，必须通过范数softmax得到统一（尺度，量度）的赋范空间才可以进行后续统一处理。
         attention_causal_weights = softmax(attention_causal_scores / queries.shape[-1]**0.5 ,dim = -1)
         # logger.info(f'attention_causal_weights_sftmx : {attention_causal_weights}')
-        #添加dropout随机关闭部分神经元
+        # 添加dropout随机关闭部分神经元,防止过拟合，和更好的泛化能力。
         attention_causal_drop_weights = add_drop_out(attention_causal_weights,0.5)
         logger.info(f'attention_causal_drop_weights : {attention_causal_drop_weights}')
-        #计算得到context_vector,
+        # 最后计算的 context_vector 是 attention_causal_drop_weights (32, 8, 50，50) @ (32, 8, 50, 64) 
+        # 结果是 (32, 8, 50，64) 
         context_vector = attention_causal_drop_weights @ values
         logger.info(f'values : {values}')
         logger.info(f'context_vector : {context_vector}')
-        #目前上下文向量最后两个维度本质上是 num_head * head_d = out_d所以可以转置1,2后com合并最后连个维度
+        #目前上下文向量最后三个维度本质上是 head_num，token_num , single_head_dim 所以可以转置1,2后com合并最后连个维度
         con_vector_com =  context_vector.transpose(1,2).contiguous().view(num_batch,num_token,embed_dim)
-        #W_com_multihead 也是要一层新的组合特征用的层，(可选层，当con_vector_com的out dim跟embed_dim不同的时候用。
-        # com_heads_c_vecters =  self.W_com_multihead(con_vector_com)
+        # 如果上下文向量的out_dim和 dim_不一致的时候可以 增加 W_com_multihead线性层，
+        # W_com_multihead(in_con_vec_out,out_embed_dim)
+        # com_heads_c_vecters =  self.W_com_multihead(con_vector_com)后输出跟 embeding一致的dim
         return con_vector_com
 
 if __name__ == '__main__':
