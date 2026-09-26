@@ -7,18 +7,19 @@ KpcTransformerBlockCfg=  {
     "vcab_sz" : 50524,
     "cntext_lnth" : 8,
     "emb_dim" : 512,
-    "n_heads" : 9,
-    "n_trnsfmr_layers" : 6,
-    "drop_rt" : 0.5,
-    "qkv_bias" : False
+    "heads_num" : 8,
+    "trnsf_blocks_num" : 6,
+    "drop_rt" : 0.1,
+    "qkv_bias" : False,
+    # 是返回softmax还是返回logits的argmax最大值的index值,也就是 tokenid
+    "returnSoftmax" : False
 }
-
 
 class KpcTransformerBlock(nn.Module):
     def __init__(self,cfg) -> None:
         super().__init__()
         self.drop = nn.Dropout(cfg["drop_rt"])
-        self.attention= MultiHeadAttention()
+        self.attention= MultiHeadAttention(cfg["drop_rt"],cfg["heads_num"],cfg["qkv_bias"])
         # normal 1 2它们各自拥有独立的、需要学习的参数（Weights 和 Bias）,归属于不同的学习层，所以必须要两个，
         self.normal1 = KpcNormal(cfg["emb_dim"])
         self.normal2 = KpcNormal(cfg["emb_dim"])

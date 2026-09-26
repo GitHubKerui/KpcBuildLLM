@@ -11,7 +11,9 @@ logger = getlogger()
 # 写配置
 KPC_LLM_CONFIG_TEST = {
     "vcab_sz" : 50524,
-    "cntext_lnth" : 1024,
+    "cntext_lnth" : 8,
+    # 最大上下文位置长度，用于生成上下文位置id,必须大于等于上面的最大上下文长度
+    "max_cntxt_pstion_lnth" : 8,
     "emb_dim" : 768,
     "heads_num" : 8,
     "trnsf_blocks_num" : 8,
@@ -32,6 +34,6 @@ casting dancing shadows on the ground.In thesunlit terraces of someunknownPlace.
 input_ids = tiktokenizer2ids(input_txt)
 # logger.info(f'input_ids : {input_ids}')
 
-prediction_ids = generate_txt_loop(input_ids,8,kpc_llm_model,25)
+prediction_ids = generate_txt_loop(input_ids,KPC_LLM_CONFIG_TEST['cntext_lnth'],kpc_llm_model,25)
 logger.info(f'prediction_ids : {prediction_ids}')
 logger.info(f'prediction_txt : {tiktokenizer2txts(prediction_ids)}')

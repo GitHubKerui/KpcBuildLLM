@@ -13,10 +13,11 @@ from kpc_llm.utils.logger import getlogger
 
 logger = getlogger()
 class MultiHeadAttention(nn.Module):
-    def __init__(self, num_head:int =3 , qkv_bias=False ):
+    def __init__(self, drop_rt:float = 0.1,num_head:int=8, qkv_bias=False ):
         super().__init__()
         self.num_head = num_head
         self.qkv_bias = qkv_bias
+        self.drop_rt = drop_rt
         #真正的token_d单独一个token的embedding维度
         # self.embed_dim = embed_dim
         # 设 nn.Linear(in，out) =  A_T(in,out) 
@@ -82,7 +83,7 @@ class MultiHeadAttention(nn.Module):
         attention_causal_weights = softmax(attention_causal_scores / queries.shape[-1]**0.5 ,dim = -1)
         # logger.info(f'attention_causal_weights_sftmx : {attention_causal_weights}')
         # 添加dropout随机关闭部分神经元,防止过拟合，和更好的泛化能力。
-        attention_causal_drop_weights = add_drop_out(attention_causal_weights,0.5)
+        attention_causal_drop_weights = add_drop_out(attention_causal_weights,self.drop_rt)
         logger.info(f'attention_causal_drop_weights : {attention_causal_drop_weights}')
         # 最后计算的 context_vector 是 attention_causal_drop_weights (32, 8, 50，50) @ (32, 8, 50, 64) 
         # 结果是 (32, 8, 50，64) 
