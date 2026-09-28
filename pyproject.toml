@@ -31,6 +31,15 @@ dev-dependencies = [
     "ruff>=0.1.0",
 ]
 
+# 锁定 torch 走 PyTorch 官方 CUDA 索引，避免 uv 解析到 PyPI 上的 CPU-only wheel
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cu128" }]
+
 [tool.ruff]
 line-length = 120
 target-version = "py312"
