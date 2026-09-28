@@ -40,7 +40,7 @@ class KpcLLMData(Dataset):
 
 # 把带traindata ids的数据集 和 target的数据集，处理成批次
 # 可以设置是一个批次多少组数据，否洗牌数据批次，是否丢弃最后可能不完整的批次数据，并行处理数据的线程
-def create_dataloader_1(txt,batch_size=4,chunk_len=256,stride=128,shuffle=False,drop_last=True,num_worker=0):
+def create_dataloader_1(txt,batch_size=4,chunk_len=256,stride=128,shuffle=False,drop_last=False,num_worker=0):
     #用tiktoken的tokenizer
     tokenizer = tiktoken.get_encoding("gpt2")
     #用Kpc的Dataset
