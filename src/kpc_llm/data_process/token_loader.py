@@ -18,18 +18,29 @@ logger = getlogger()
 # chunk_len后面就是llm上下文长度，
 # 并且右移一位获得target组，最终会得到 context_len,token_len 这个shape的train 和 target 两个dataset
 class KpcLLMData(Dataset):
-    def __init__(self,text,tokenizer,chunk_len,stride) -> None:
+    def __init__(self,tokens_ids,chunk_len,stride) -> None:
         super().__init__()
         self.input_ids = []
         self.target_ids = []
         self.chunk_len = chunk_len
-        tokens_ids = tokenizer.encode(text,allowed_special={'<|endoftext|>'})
 
-        for i in range(0,len(tokens_ids)-chunk_len,stride):
-            input_ids_tensor = torch.tensor(tokens_ids[i:i+chunk_len])
-            target_ids_tensor = torch.tensor(tokens_ids[i+1:i+chunk_len+1])
-            self.input_ids.append(input_ids_tensor)
-            self.target_ids.append(target_ids_tensor)
+        # 归一化必须在循环外一次做完：
+        # 1) 传进来的可能是 [1, token_num] 的张量，len() 只有 1，会切出空数据集；
+        # 2) 若它还在 CUDA 上，循环里每次 torch.tensor(cuda_slice) 都是一次 GPU→CPU 同步拷贝，
+        #    既慢又会刷 "To copy construct from a tensor" 的 UserWarning。
+        if isinstance(tokens_ids, torch.Tensor):
+            ids = tokens_ids.detach().reshape(-1).cpu().to(torch.long)
+        else:
+            ids = torch.tensor(tokens_ids, dtype=torch.long)
+
+        print(f"token num : {ids.numel()}")
+        if ids.numel() <= chunk_len:
+            raise ValueError(f"token 数({ids.numel()}) 必须大于 chunk_len({chunk_len})")
+
+        # 一次性切好并保存只读视图，避免逐样本拷贝
+        for i in range(0,ids.numel()-chunk_len,stride):
+            self.input_ids.append(ids[i:i+chunk_len])
+            self.target_ids.append(ids[i+1:i+chunk_len+1])
 
     def __len__(self):
         length = len(self.input_ids)
@@ -40,11 +51,11 @@ class KpcLLMData(Dataset):
 
 # 把带traindata ids的数据集 和 target的数据集，处理成批次
 # 可以设置是一个批次多少组数据，否洗牌数据批次，是否丢弃最后可能不完整的批次数据，并行处理数据的线程
-def create_dataloader_1(txt,batch_size=4,chunk_len=256,stride=128,shuffle=False,drop_last=False,num_worker=0):
+def create_dataloader_1(batch_size,chunk_len,stride,shuffle=False,drop_last=False,num_worker=0,tokenids=None):
     #用tiktoken的tokenizer
-    tokenizer = tiktoken.get_encoding("gpt2")
+    # tokenizer = tiktoken.get_encoding("gpt2")
     #用Kpc的Dataset
-    kpcLLLData = KpcLLMData(txt,tokenizer,chunk_len,stride)
+    kpcLLLData = KpcLLMData(tokenids,chunk_len,stride)
     
     dataLoader = DataLoader(
         # 只是成对的training 和target 的list tuple
@@ -55,7 +66,12 @@ def create_dataloader_1(txt,batch_size=4,chunk_len=256,stride=128,shuffle=False,
         # 是否丢弃最后一个批次的数据，因为可能不完整，影响整体数据对齐
         drop_last=drop_last,
         # 开启几个线程加载数据
-        num_workers=num_worker
+        num_workers=num_worker,
+        # 5800X3D + 5070 Ti 必开，加速内存到显存的传输
+        # 无 CUDA 时 pin_memory 无意义，torch 会告警，故按可用设备动态决定
+        pin_memory=torch.cuda.is_available(),
+        # 防止每个 Epoch 重新创建线程浪费时间（num_workers=0 时必须关闭，否则 ValueError）
+        persistent_workers=num_worker > 0
     )
     return dataLoader
 
@@ -73,7 +89,9 @@ def getDateLoaderTokenNum(dataloader:DataLoader):
 
 def test_creat():
     txt = getTxtStr('the-verdict.txt','data')
-    dataloader = create_dataloader_1(txt,batch_size=8,chunk_len=4,stride=4)
+    tokenizer = tiktoken.get_encoding("gpt2")
+    tokens_ids = tokenizer.encode(txt,allowed_special={'<|endoftext|>'})
+    dataloader = create_dataloader_1(tokenids=tokens_ids,batch_size=8,chunk_len=4,stride=4,)
     data_iter = iter(dataloader)
     data = next(data_iter)
     logger.info(f'测试查看最终dataLoader的数据样式1 : {data}')

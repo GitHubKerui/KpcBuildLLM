@@ -9,7 +9,7 @@ logger = getlogger()
 # 获得项目根目录对象 Path
 root = here()
 # 输出日志
-logger.info(f"root_path : {root}")
+# logger.info(f"root_path : {root}")
 
 def downVerdictFile():
     """
@@ -60,7 +60,7 @@ def getVerdictTxtStr():
     return getTxtStr('the-verdict.txt','data')
     
     
-def getTxtStr(fileName:str,saveSubDir: str = None):
+def getTxtStr(fileName:str,saveSubDir: str = None)->str:
     """
     从指定的根目录的文件夹里获取txt文件内容的字符串 step4
      Args:

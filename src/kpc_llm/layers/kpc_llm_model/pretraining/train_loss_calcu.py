@@ -66,8 +66,8 @@ if __name__ == "__main__":
   
     with torch.no_grad():
         # 实例化LLM
-        kpc_llm_model = KpcLLMModel(LLM_CONFIG)
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        kpc_llm_model = KpcLLMModel(LLM_CONFIG).to(device)
         totalLoss = caluBatchesCrossEnLoss(dataloader,kpc_llm_model,device,0)
     print(f" totalLoss_e :{totalLoss}")
     print(f" totalLoss_e perplexity :{torch.exp(torch.tensor(totalLoss))}")
