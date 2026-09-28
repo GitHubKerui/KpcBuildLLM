@@ -15,11 +15,11 @@ def calcuOneBatchCrossEnLoss(train_batch:torch.Tensor,target_batch:torch.Tensor,
     train_batch,target_batch = train_batch.to(device),target_batch.to(device)
     # 模型向前传播 (training使用)
     predict_train:torch.Tensor= model(train_batch)
-    # 计算交叉熵损失
+    # 计算交叉熵损失(input is unnormalized logits) 输入是逻辑值，不是softmax的概率值
     crossEnLoss = torch.nn.functional.cross_entropy(predict_train.flatten(0,1),target_batch.flatten())
     return crossEnLoss
 
-def caluBatchesCrossEnLoss(dataLoader,model,device,batchNum):
+def caluBatchesCrossEnLoss(dataLoader,model,device,batchNum=0):
     # 判断数据是否完整
     if dataLoader is None or  (dataLoader) == 0:
         return float('nan')
@@ -27,8 +27,9 @@ def caluBatchesCrossEnLoss(dataLoader,model,device,batchNum):
         # 如果没有指定计算前多少个batch的loss 则算全部的
         batchNum = len(dataLoader)
     else:
+        realLen = len(dataLoader)
         # 如果指定了则取长度和指定数量的最小值。
-        batchNum = min(batchNum,dataLoader)
+        batchNum = min(batchNum,realLen)
     
     total_loss=0.
     for i,(train_batch,target_batch) in enumerate(dataLoader):

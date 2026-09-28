@@ -9,7 +9,7 @@ from kpc_llm.layers.kpc_llm_model.kpc_llm_model import KpcLLMModel
 from kpc_llm.layers.kpc_llm_model.pretraining.train_loss_calcu import caluBatchesCrossEnLoss
 
 # chunk_len 后面就是llm上下文的长度 ，batch_size是多组上下文训练数据一组
-def divDatas2TraValTes(dataset,batch_size=4,chunk_len=256,stride=256,shuffle=False,drop_last=True,num_worker=0):
+def divDatas2TraValTes(dataset,batch_size=4,chunk_len=256,stride=256,shuffle=False,drop_last=False,num_worker=0):
 
     dataLen = len(dataset)
     trainLastInd = int(dataLen * 0.8)
@@ -34,9 +34,16 @@ def k_fold_cross_process(dataloader):
 if __name__ == "__main__":
     # get TrainData from data/the-verdict.txt
     train_txt = getTxtStr('the-verdict.txt','data')
-    train_txtln  = len(train_txt)
+    train_txtln  = len(train_txt) if train_txt is not None else 0
     print(f"train_txt length : {train_txtln}")
-    trainDsloader,valDsloader,testDsloader = divDatas2TraValTes(train_txt,4,512,512)
+    trainDsloader,valDsloader,testDsloader = divDatas2TraValTes(train_txt,4,256,256)
+    ds1 = trainDsloader.dataset
+    sample_num = ds1.chunk_len 
+    batch_num = trainDsloader.batch_size
+    token_num = batch_num * sample_num
+    print(f"sample_num : {sample_num} batch_num : {batch_num} token_num : {token_num}")
+    for train,target in trainDsloader:
+        print(f"train shape :{train.shape}")
     # 写配置
     LLM_CONFIG = {
         "vcab_sz" : 50524,
