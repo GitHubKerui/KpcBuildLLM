@@ -14,7 +14,7 @@ def getlogger(name="kcp_build_llm"):
 
     # 2. 日志格式（时间 + 级别 + 文件名 + 行号 + 信息）
     log_formatter = logging.Formatter(
-        "%(asctime)s | %(levelname)-8s | %(filename)s:%(lineno)d | %(message)s",
+        "%(asctime)s | %(levelname)s | %(filename)s:%(lineno)d | %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S"
     )
 
