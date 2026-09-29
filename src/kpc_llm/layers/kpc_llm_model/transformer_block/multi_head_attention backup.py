@@ -7,8 +7,8 @@
 最终需要一个 combine变换，也就是一个更抽象的变换空间来组合降维，以便最终把特征转化成低标签空间。这时候需要一个新的 out空间，可以用 nn.Linear来初始化。
 '''
 from torch import nn,Tensor,softmax,manual_seed
-from kpc_llm.data_process.causal_attention_process import setUpNegativeInfMask
-from kpc_llm.data_process.drop_out import add_drop_out
+from kpc_llm.layers.kpc_llm_model.transformer_block.causal_attention_process import setUpNegativeInfMask
+from kpc_llm.layers.kpc_llm_model.transformer_block.drop_out import add_drop_out
 from kpc_llm.utils.logger import getlogger
 
 logger = getlogger()

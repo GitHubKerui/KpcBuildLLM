@@ -20,7 +20,7 @@ def downVerdictFile():
                "the-verdict.txt")
     return getFileFromUrl(fileUrl, "data")
 
-def getFileFromUrl(fileUrl: str, saveSubDir: str = None):
+def getFileFromUrl(fileUrl: str, saveSubDir: str):
     """
     从 URL 下载文件到本地目录，按下载名称保存 step2
 
@@ -60,7 +60,7 @@ def getVerdictTxtStr():
     return getTxtStr('the-verdict.txt','data')
     
     
-def getTxtStr(fileName:str,saveSubDir: str = None)->str:
+def getTxtStr(fileName:str,saveSubDir: str)->str:
     """
     从指定的根目录的文件夹里获取txt文件内容的字符串 step4
      Args:

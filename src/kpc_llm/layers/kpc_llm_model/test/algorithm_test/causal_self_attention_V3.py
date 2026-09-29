@@ -1,8 +1,7 @@
 from turtle import forward
 from torch import nn,softmax,manual_seed,Tensor
-from kpc_llm.data_process import drop_out
 from kpc_llm.utils.logger import getlogger
-from kpc_llm.data_process.causal_attention_process import setUpNegativeInfMask
+from kpc_llm.layers.kpc_llm_model.transformer_block.causal_attention_process import setUpNegativeInfMask
 
 
 logger = getlogger()

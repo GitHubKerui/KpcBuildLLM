@@ -4,8 +4,8 @@
 # 4 训练部分数据 需要tokenizer的处理。后进入模型训练。
 from multiprocess.pool import worker
 
-from kpc_llm.data_process.token_loader import create_dataloader_1
-from kpc_llm.data_process.textloader import getTxtStr
+from kpc_llm.layers.kpc_llm_model.token_process.tokenid_ds_loader import create_dataloader
+from kpc_llm.data_fetch.textloader import getTxtStr
 
 import torch
 from kpc_llm.layers.kpc_llm_model.kpc_llm_model import KpcLLMModel
@@ -23,9 +23,9 @@ def divDatas2TraValTes(tokenids:torch.Tensor,batch_size,chunk_len,stride,shuffle
     valDataset = tokenids[trainLastInd:valLastInd]
     testDataset = tokenids[valLastInd:]
     
-    trainDatasetloader = create_dataloader_1(batch_size,chunk_len,stride,shuffle,drop_last,num_worker,tokenids=trainDataset)
-    valDatasetloader = create_dataloader_1(batch_size,chunk_len,stride,shuffle,drop_last,num_worker,tokenids=valDataset)
-    testDatasetloader = create_dataloader_1(batch_size,chunk_len,stride,shuffle,drop_last,num_worker,tokenids=testDataset)
+    trainDatasetloader = create_dataloader(trainDataset,batch_size,chunk_len,stride,shuffle,drop_last,num_worker)
+    valDatasetloader = create_dataloader(valDataset,batch_size,chunk_len,stride,shuffle,drop_last,num_worker)
+    testDatasetloader = create_dataloader(testDataset,batch_size,chunk_len,stride,shuffle,drop_last,num_worker)
 
     return trainDatasetloader,valDatasetloader,testDatasetloader
 

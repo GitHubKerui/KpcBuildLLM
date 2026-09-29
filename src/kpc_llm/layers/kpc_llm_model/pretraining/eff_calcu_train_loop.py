@@ -6,14 +6,13 @@ from logging import Logger
 
 from torch._inductor.config import can_inplace_pad_graph_input
 from torch.utils.data import dataloader
-from kpc_llm.data_process import tiktokenizer
 from kpc_llm.layers.kpc_llm_model.kpc_llm_model import KpcLLMModel
 from kpc_llm.layers.kpc_llm_model.pretraining.train_loss_calcu import calcuOneBatchCrossEnLoss,caluBatchesCrossEnLoss
-from kpc_llm.layers.kpc_llm_model.token_process.tiktokenizer import qwtokenizer2ids, qwtokenizer2txts,tiktokenizer2ids,tiktokenizer2txts
+from kpc_llm.layers.kpc_llm_model.token_process.tokenizer_hub import qwtokenizer2ids, qwtokenizer2txts,tiktokenizer2ids,tiktokenizer2txts
 import tiktoken
-from kpc_llm.layers.kpc_llm_model.test.generate_txt_loop import generate_txt_loop
+from kpc_llm.layers.kpc_llm_model.test.llm_text.generate_txt_loop import generate_txt_loop
 from kpc_llm.layers.kpc_llm_model.pretraining.train_data_div3_load import divDatas2TraValTes
-from kpc_llm.data_process.textloader import getTxtStr
+from kpc_llm.data_fetch.textloader import getTxtStr
 from kpc_llm.utils.logger import getlogger
 from transformers import AutoTokenizer
 import torch
@@ -183,6 +182,7 @@ def main():
 
 # Windows 下 DataLoader(num_workers>0) 用 spawn 启动子进程，子进程会重新导入本模块；
 # 执行代码必须放在 __main__ 守卫内，否则会重复跑训练并抛出
+# 所以必须放在 __main__ 守卫内，否则会重复跑训练并抛出
 # "An attempt has been made to start a new process before ..." RuntimeError。
 if __name__ == "__main__":
     # multiprocessing.freeze_support()

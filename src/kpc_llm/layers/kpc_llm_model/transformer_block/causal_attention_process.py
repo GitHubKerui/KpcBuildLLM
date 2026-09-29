@@ -1,6 +1,5 @@
 from torch._refs import zero
 from kpc_llm.utils.logger import getlogger
-from kpc_llm.layers.self_attention_v2 import SelfAttentionV2
 from torch import Tensor,nn,manual_seed,ones,tril,triu,inf,bool
 from kpc_llm.utils.logger import getlogger
 
@@ -53,6 +52,9 @@ def getTriuTrueMask(context_len):
  
 
 if __name__ =='__main__':
+
+    from kpc_llm.layers.kpc_llm_model.test.algorithm_test.self_attention_v2 import SelfAttentionV2
+
     manual_seed(517)
     test_input = Tensor([
         [0.43, 0.15, 0.89], # Your 

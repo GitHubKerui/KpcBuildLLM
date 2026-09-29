@@ -7,8 +7,7 @@
 最终需要一个 combine变换，也就是一个更抽象的变换空间来组合降维，以便最终把特征转化成低标签空间。这时候需要一个新的 out空间，可以用 nn.Linear来初始化。
 '''
 from torch import nn,Tensor,softmax,manual_seed
-from kpc_llm.data_process.causal_attention_process import setUpNegativeInfMask,getTriuTrueMask
-from kpc_llm.data_process.drop_out import add_drop_out
+from kpc_llm.layers.kpc_llm_model.transformer_block.causal_attention_process import getTriuTrueMask
 from kpc_llm.utils.logger import getlogger
 
 logger = getlogger()
@@ -124,8 +123,20 @@ if __name__ == '__main__':
         # [0.77, 0.25, 0.10], # one 
         # [0.05, 0.80, 0.55]] # step
     ])
+    cfg=  {
+    "vcab_sz" : 50524,
+    "cntext_lnth" : 6,
+    "emb_dim" : 512,
+    "heads_num" : 3,
+    "trnsf_blocks_num" : 6,
+    "drop_rt" : 0.1,
+    "qkv_bias" : False,
+    # 是返回softmax还是返回logits的argmax最大值的index值,也就是 tokenid
+    "returnSoftmax" : False
+}
+
     logger.info(f'input shape : {inputs.shape}')
-    m_attention = MultiHeadAttention()
+    m_attention = MultiHeadAttention(cfg['cntext_lnth'],6,cfg["drop_rt"],cfg["heads_num"],cfg["qkv_bias"])
     com_heads_c_vecters = m_attention(inputs)
     #should be 2,6,9
     logger.info(f'com_heads_c_vecters : {com_heads_c_vecters}')

@@ -7,10 +7,10 @@ import torch
 from torch.utils import data
 from torch.utils.data import DataLoader
 
-from kpc_llm.data_process import tiktokenizer
+from kpc_llm.layers.kpc_llm_model.test.algorithm_test.tiktokenizer import tiktokenizer
 from kpc_llm.utils import getlogger
-from kpc_llm.data_process.textloader import getTxtStr
-from kpc_llm.data_process.token_loader import create_dataloader_1
+from kpc_llm.data_fetch.textloader import getTxtStr
+from kpc_llm.layers.kpc_llm_model.token_process.tokenid_ds_loader import create_dataloader
 
 logger = getlogger()
 
@@ -27,7 +27,7 @@ class TokenId2InputEnbedding():
         #给位置input enbedding初始化用的 chunk块的长度，因为还没有扩展embedding_dim，所以这里是shape的倒数第1个维度，。
         chunk_len = token_input.shape[-1]
         #获取tiktoken的gpt2的tokenizer的词表的size
-        vocab_size = tiktokenizer.tiktokenizer.n_vocab
+        vocab_size = tiktokenizer.n_vocab
         #全词表的嵌入层的随机初始化，随机抽样的分向量服从正态分布，方差是 1/embedding_dim ：1/嵌入维度
         token_embedding_layer = torch.nn.Embedding(vocab_size, embedding_dim)
         logger.info(f'vocab_size shape : {vocab_size}')
@@ -48,7 +48,7 @@ class TokenId2InputEnbedding():
 
 if __name__ == '__main__':
     txt = getTxtStr('the-verdict.txt','data')
-    dataloader = create_dataloader_1(txt,batch_size=8,chunk_len=4,stride=4)
+    dataloader = create_dataloader(txt,batch_size=8,chunk_len=4,stride=4)
     layer_input_enbedding = TokenId2InputEnbedding.buildLayerInputEnbedding(dataloader,256)
     logger.info(f'layer_input_enbedding shape : {layer_input_enbedding.shape}')
     logger.info(f'layer_input_enbedding : {layer_input_enbedding}')

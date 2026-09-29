@@ -5,10 +5,12 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 import  torch
 import math
 from torch.utils.data import dataloader
-from kpc_llm.data_process.textloader import getTxtStr
-from kpc_llm.data_process.token_loader import create_dataloader_1
+from kpc_llm.data_fetch.textloader import getTxtStr
+from kpc_llm.layers.kpc_llm_model.token_process.tokenid_ds_loader import create_dataloader
 from kpc_llm.layers.kpc_llm_model.kpc_llm_model import KpcLLMModel
+from kpc_llm.utils.logger import getlogger
 
+logger = getlogger()
 #1 因为损失是按照batch计算平均值的。所以要基本的 batch平均loss的计算。
 def calcuOneBatchCrossEnLoss(train_batch:torch.Tensor,target_batch:torch.Tensor,model,device):
     # 将数据加载到CUDA里
@@ -41,13 +43,11 @@ def caluBatchesCrossEnLoss(dataLoader,model,device,batchNum=0):
 
     return total_loss / batchNum
 
-# for test
-if __name__ == "__main__":
-    # get TrainData from data/the-verdict.txt
+def test():
+      # get TrainData from data/the-verdict.txt
     train_txt = getTxtStr('the-verdict.txt','data')
-    train_txtln  = len(train_txt)
-    print(f"train_txt length : {train_txtln}")
-    dataloader = create_dataloader_1(train_txt,4,512,512)
+    logger.info(f"train_txt length : {len(train_txt)}")
+    dataloader = create_dataloader(train_txt,4,512,512)
     # 写配置
     LLM_CONFIG = {
         "vcab_sz" : 50524,
@@ -78,4 +78,9 @@ if __name__ == "__main__":
     # totalLoss_2 = torch.pow(2,totalLoss_2)
     # print(f" totalLoss_2 perplexity :{torch.exp(torch.tensor(totalLoss_2))}")
 
-#1.2 TODO MSE/MAE均方差损失函数
+    #1.2 TODO MSE/MAE均方差损失函数
+
+
+# for test
+if __name__ == "__main__":
+    test()
