@@ -2,9 +2,9 @@ import tiktoken
 # from transformers import AutoTokenizer
 
 # 151936 词表规模，注意cnf配置文件对齐词表，179M参数规模，最优（≈1.5 字/token）中文压缩率，中文质量最好
-# tokenizerQwen25 = AutoTokenizer.from_pretrained("Qwen/Qwen2.5-0.5B")
+# tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen2.5-0.5B")
 text = " 测试 测试 测试 "
-# ids = tokenizerQwen25.encode(text, add_special_tokens=False)   # 注意必须 False
+# ids = tokenizer.encode(text, add_special_tokens=False)   # 注意必须 False
 # 1. 准备一段测试中文文本
 text_zh = "每一次努力都会让你改变。"
 

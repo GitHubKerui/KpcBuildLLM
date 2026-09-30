@@ -1,5 +1,3 @@
-from torch._refs import zero
-from kpc_llm.utils.logger import getlogger
 from torch import Tensor,nn,manual_seed,ones,tril,triu,inf,bool
 from kpc_llm.utils.logger import getlogger
 

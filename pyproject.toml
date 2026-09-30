@@ -13,6 +13,9 @@ dependencies = [
     # 注意：不要锁死 3.7.x，它早于 Python 3.12 发布、没有 cp312 wheel，会触发源码编译（需要 MSVC）
     "matplotlib>=3.8.0",
     "datasets>=2.14.0",
+    "accelerate>=1.15.0",
+    "sentencepiece>=0.2.2",
+    "protobuf>=4.25.3",
 ]
 
 [project.optional-dependencies]

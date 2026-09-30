@@ -1,21 +1,21 @@
 import time  # 1. 引入时间模块
-import multiprocessing
-
-from logging import Logger
-
-
-from torch._inductor.config import can_inplace_pad_graph_input
-from torch.utils.data import dataloader
 from kpc_llm.layers.kpc_llm_model.kpc_llm_model import KpcLLMModel
 from kpc_llm.layers.kpc_llm_model.pretraining.train_loss_calcu import calcuOneBatchCrossEnLoss,caluBatchesCrossEnLoss
-from kpc_llm.layers.kpc_llm_model.token_process.tokenizer_hub import qwtokenizer2ids, qwtokenizer2txts,tiktokenizer2ids,tiktokenizer2txts
-import tiktoken
-from kpc_llm.layers.kpc_llm_model.test.llm_text.generate_txt_loop import generate_txt_loop
+from kpc_llm.layers.kpc_llm_model.token_process.tokenizer_hub import tiktokenizer2idsUnsq,tokenizer2txtsSq
 from kpc_llm.layers.kpc_llm_model.pretraining.train_data_div3_load import divDatas2TraValTes
+from kpc_llm.layers.kpc_llm_model.pretraining.generate_and_print_sample import generate_and_print_sample
+from kpc_llm.layers.kpc_llm_model.pretraining.evaluate_model import evaluate_model
 from kpc_llm.data_fetch.textloader import getTxtStr
 from kpc_llm.utils.logger import getlogger
-from transformers import AutoTokenizer
+import tiktoken
 import torch
+from pyprojroot import here
+from transformers import AutoTokenizer
+# from torch.utils.data import dataloader
+# import multiprocessing
+
+
+logger = getlogger()
 
 # 写配置
 TRAIN_CNF = {
@@ -32,7 +32,30 @@ TRAIN_CNF = {
     # 是返回softmax还是返回logits的argmax最大值的index值,也就是 tokenid
     "returnSoftmax" : False
 }
-tokenizerTrain =tiktoken.get_encoding("cl100k_base") 
+"""
+这是英文的语料，效果不错。一轮20mb就语法基本通顺了。 
+"""
+# gpt2 tiktokenizer cl100k_base vocab_size 100277
+tokenizer =tiktoken.get_encoding("cl100k_base") 
+dataFileName = "tinystories_20mb.txt"
+dataDoc = "data"
+start_context = "Long long ago, there is a girl "
+
+
+""" 
+这是中文训练的语料模型 
+"""
+# InternLM2.5-1.8B vocab_size = 92550
+# model_id = "internlm/internlm2_5-1_8b-chat"
+# model_id = here() / "data" / "tokenizer" / "internlm2_5"
+# tokenizerTrain = AutoTokenizer.from_pretrained(
+#     model_id,
+#     trust_remote_code=True,
+#     use_fast=False,
+# )
+# dataFileName = "corpus_zh.txt"
+# dataDoc = "data"
+# start_context = "这是一个小红帽的故事，从前 "
 
 def train_model_simple(model, train_loader, val_loader, optimizer, device, num_epochs,
                        eval_freq, start_context):
@@ -60,8 +83,8 @@ def train_model_simple(model, train_loader, val_loader, optimizer, device, num_e
         token_num   = sample_num * one_sample_token_num   # 一个 epoch 覆盖的 token 总数
 
         
-        print(f"-------------------- Ep {epoch+1}/{num_epochs} Training (batch_num={batch_num}) ------------------: ")
-        print(f"--每个样本的token数：{one_sample_token_num}，每批次样本数: {batch_size},总共多少批次: {batch_num},一个Epoch覆盖的token总数: {token_num}--: ")
+        logger.info(f"-------------------- Ep {epoch+1}/{num_epochs} Training (batch_num={batch_num}) ------------------: ")
+        logger.info(f"--每个样本的token数：{one_sample_token_num}，每批次样本数: {batch_size},总共多少批次: {batch_num},一个Epoch覆盖的token总数: {token_num}--: ")
         for i,(input_batch, target_batch) in enumerate(train_loader):
 
             # print(f"-------------------- Ep {epoch+1} Batch {i+1} Training -------------------: ")
@@ -75,30 +98,34 @@ def train_model_simple(model, train_loader, val_loader, optimizer, device, num_e
             # 计算模型token的总的训练量，也就是人的读书的字数
             tokens_seen += input_batch.numel()
             global_step += 1
-            # 维护训练集 loss 的滑动平均，供评估时直接复用
+            # 把loss作为tensor的数据从state_dict中切割，只取标量
             loss_val = loss.item()
+            # 维护训练集 loss 的滑动平均，比较经典的1/1-0.9 = 10 ，最新的loss只是加权平均的1/10 ，这样可以消除loss的抖动做展示。
             train_loss_ema = loss_val if train_loss_ema is None else 0.9 * train_loss_ema + 0.1 * loss_val
 
-            # Optional evaluation step
+            # 1.训练评估步骤， 每 eval_freq 次batch，对训练进行评估
             if global_step % eval_freq == 0:
+                # 获取评估数据
                 train_data_loss, val_data_loss = evaluate_model(
                     model, val_loader, device, cur_train_loss=train_loss_ema)
+
+                # 2. 记录评估数据
                 train_losses.append(train_data_loss)
                 val_losses.append(val_data_loss)
                 track_tokens_seen.append(tokens_seen)
                 
-                # 2. 计算速度核心逻辑
+                # 3. 计算训练速度/性能的逻辑(tokens/s)
                 current_time = time.time()
                 time_elapsed = current_time - last_time       # 距离上次评估过去了多少秒
                 tokens_processed = tokens_seen - last_tokens_seen # 这期间一共处理了多少Token
                 
-                # 防止极其罕见的除以0情况（例如 eval_freq 设得极小且运行极快）
+                # 4. 防止极其罕见的除以0情况（例如 eval_freq 设得极小且运行极快）
                 tokens_per_sec = tokens_processed / time_elapsed if time_elapsed > 0 else 0
                 
-                # 3. 在日志中打印
+                # 5. 在日志中打印
                 # 注意：进度要用 epoch 内的 i+1 除以总批次数 batch_num；
                 # global_step 是跨 epoch 累计的，用它算进度会超过 100%
-                print(f"Ep {epoch+1}/{num_epochs} (BatchAll : {batch_num}) "
+                logger.info(f"Ep {epoch+1}/{num_epochs} (BatchAll : {batch_num}) "
                       f"(Batch now : {i+1:06d}/{batch_num:06d}): "
                       f"input_batch.shape: {input_batch.shape} target_batch.shape: {target_batch.shape} "
                       f"Train loss: {train_data_loss:.3f}, Val loss: {val_data_loss:.3f} | "
@@ -107,78 +134,48 @@ def train_model_simple(model, train_loader, val_loader, optimizer, device, num_e
                       f"| Global Step: {global_step}"
                       )
                 
-                # 4. 更新基准线，为下一次计算做准备
+                # 6. 更新基准线，为下一次计算做准备
                 last_time = current_time
                 last_tokens_seen = tokens_seen
 
         # Print a sample text after each epoch
         generate_and_print_sample(
-            model, device, start_context,tokenizer=tokenizerTrain
+            model, device, start_context,tiktokenizer2idsUnsq,tokenizer2txtsSq,tokenizer,100
         )
 
     return train_losses, val_losses, track_tokens_seen
 
-# 评估状态下，对训练数据，和评估数据计算loss值
-def evaluate_model(model, val_loader, device, eval_batch_num=16, cur_train_loss: float | None = None):
-    """
-    注意：这里不要再去迭代 train_loader。
-    外层 for 循环正在遍历 train_loader，评估时若再对同一个 DataLoader 创建第二个迭代器，
-    在 persistent_workers=True 下两个迭代器会争抢 worker，导致外层 epoch 迟迟走不完
-    （表现为 global_step 一直涨、epoch 却不增加）。
-    train loss 直接用训练过程中维护的滑动平均值传入。
-    """
-    model.eval()
-    with torch.no_grad():
-        # 只抽样前 eval_batch_num 个 batch：全量评估（batchNum=0）会把训练拖慢十几倍
-        val_data_loss = caluBatchesCrossEnLoss(val_loader, model, device, eval_batch_num)
-    model.train()
-    return (cur_train_loss if cur_train_loss is not None else float("nan")), val_data_loss
 
-# 自回归生成预测测试
-def generate_and_print_sample(model, device, start_context,tokenizer):
-    model.eval()
-    
-    # context_size = model.pos_emb.weight.shape[0]
-    # input_ids = qwtokenizer2ids(start_context,tokenizer).to(device)
-    input_ids = tiktokenizer2ids(start_context,tokenizer).to(device)
-    with torch.no_grad():
-        token_ids = generate_txt_loop(input_ids,TRAIN_CNF['cntext_lnth'],model,50)
-        decoded_text = tiktokenizer2txts(token_ids,tokenizer)
-        print(decoded_text.replace("\n", " "))  # Compact print format
-    model.train()
-
-def main():
+def training_model(num_epochs =1):
     torch.manual_seed(825)
-    model = KpcLLMModel(TRAIN_CNF)
-    print (f"cuda is {torch.cuda.is_available()}")
+    logger.info (f"cuda is {torch.cuda.is_available()}")
+    model = KpcLLMModel(TRAIN_CNF) 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)
-    optimizer = torch.optim.AdamW(model.parameters(), lr=0.0001, weight_decay=0.1)
 
-    num_epochs = 30
+    #学习率较低0.0001，高权重w衰减率0.1较大，这种配置合适保持原有参数特征，避免新特征过拟合。合适原有参数上的FineTune 微调
+    # optimizer = torch.optim.AdamW(model.parameters(), lr=0.0001, weight_decay=0.1)
+    # 学习率较低0.001，高权重哦衰减率0.01较小，这种配置可以快速收敛，保证了对新数据的不被过渡泛化导致欠拟合。合适新数据的首次Training
+    # LLM训练最佳选择，AdamW，不合适用Adam，Adam容易在梯度突变的高难度学习step中可能导致梯度爆炸的灾难。
+    optimizer = torch.optim.AdamW(model.parameters(), lr=0.001, weight_decay=0.01)
 
-    # get TrainData from data/the-verdict.txt
-    # en_train_txt = getTxtStr('the-verdict.txt','data')
-    # cn_train_txt = getTxtStr('corpus_zh_half.txt','data')
-    cn_train_txt = getTxtStr('corpus_zh.txt','data')
-    train_txtln  =  len(cn_train_txt) if cn_train_txt is not None else 0
-    print(f"train_txt length : {train_txtln}")
+    train_txt = getTxtStr(dataFileName,dataDoc)
+    logger.info(f"train_txt length : {len(train_txt) if train_txt is not None else 0}")
     # 82 万 id 只占约 6.6MB，放 GPU 没有收益，且 DataLoader 的 spawn 子进程读不到 CUDA 张量；
-    # reshape(-1) 把 tiktokenizer2ids 返回的 [1, token_num] 摊平成一维
-    train_ids = tiktokenizer2ids(cn_train_txt, tokenizerTrain).reshape(-1).cpu()
+    # reshape(-1) 把 tiktokenizer2idsUnsq 返回的 [1, token_num] 摊平成一维
+    train_ids = tiktokenizer2idsUnsq(train_txt, tokenizer).reshape(-1).cpu()
     trainDsloader,valDsloader,testDsloader = divDatas2TraValTes(tokenids=train_ids,batch_size=TRAIN_CNF['batch_size'],chunk_len=TRAIN_CNF['cntext_lnth'],stride=TRAIN_CNF['cntext_lnth']//2,num_worker=4)
 
     # 初始输入的文字
-    cn_start_cont = "这是一个小红帽的故事，从前"
-    en_start_cont = "Long long ago, there is a girl "
+    # cn_start_cont = "这是一个小红帽的故事，从前"
+    # en_start_cont = "Long long ago, there is a girl "
 
     train_losses, val_losses, tokens_seen = train_model_simple(
         model, trainDsloader, valDsloader, optimizer, device,
-        num_epochs = num_epochs, eval_freq=16,
-        start_context = cn_start_cont
+        num_epochs, eval_freq=16,
+        start_context = start_context
     )
     return train_losses, val_losses, tokens_seen
-
 
 # Windows 下 DataLoader(num_workers>0) 用 spawn 启动子进程，子进程会重新导入本模块；
 # 执行代码必须放在 __main__ 守卫内，否则会重复跑训练并抛出
@@ -186,4 +183,4 @@ def main():
 # "An attempt has been made to start a new process before ..." RuntimeError。
 if __name__ == "__main__":
     # multiprocessing.freeze_support()
-    main()
+    training_model(2)
