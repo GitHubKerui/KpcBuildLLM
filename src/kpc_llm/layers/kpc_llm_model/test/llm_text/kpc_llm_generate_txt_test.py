@@ -1,6 +1,6 @@
 # Description: 测试kpc llm生成txt
 from kpc_llm.layers.kpc_llm_model.kpc_llm_model import KpcLLMModel
-from kpc_llm.layers.kpc_llm_model.token_process.tokenizer_hub import qwtokenizer2ids,tiktokenizer2txts
+from kpc_llm.layers.kpc_llm_model.token_process.tokenizer_hub import tiktokenizer2idsUnsq,tokenizer2txtsSq
 from kpc_llm.layers.kpc_llm_model.test.llm_text.generate_txt_loop import generate_txt_loop
 from kpc_llm.utils.logger import getlogger
 from transformers import AutoTokenizer
@@ -33,9 +33,9 @@ input_txt="""The morning sunlight is filtering through the leaves,
 casting dancing shadows on the ground.In thesunlit terraces of someunknownPlace."""
 
 tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen2.5-0.5B")
-input_ids = qwtokenizer2ids(input_txt,tokenizer)
+input_ids = tiktokenizer2idsUnsq(input_txt,tokenizer)
 # logger.info(f'input_ids : {input_ids}')
 
 prediction_ids = generate_txt_loop(input_ids,KPC_LLM_CONFIG_TEST['cntext_lnth'],kpc_llm_model,25)
 logger.info(f'prediction_ids : {prediction_ids}')
-logger.info(f'prediction_txt : {tiktokenizer2txts(prediction_ids,tokenizer)}')
+logger.info(f'prediction_txt : {tokenizer2txtsSq(prediction_ids,tokenizer)}')

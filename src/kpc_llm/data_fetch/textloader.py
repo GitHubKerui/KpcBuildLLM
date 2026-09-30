@@ -84,4 +84,4 @@ def getTxtStr(fileName:str,saveSubDir: str)->str:
         return rawStr
     else:
         logger.info(f"数据集不存在: {fileLocalSavePath}")
-        return None
+        return ""

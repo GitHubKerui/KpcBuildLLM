@@ -2,7 +2,7 @@
 from importlib.metadata import version
 import tiktoken
 from kpc_llm.utils import getlogger
-from torch import tensor
+from torch import tensor,Tensor
 from transformers import AutoTokenizer
 
 # 这里先默认是用效率最高的 tiktokenizer做转换 后续根据需求可以换 BEP等其他的组件
@@ -36,8 +36,14 @@ def qwtokenizer2idsUnsq(txts,tokenizer):
 # internlm25 转换 token_ids_tensor 为文本
 # qw25 tokenizer 转换 token_ids_tensor 为文本  三种的解码都一样
 def tokenizer2txtsSq(token_ids_tensor,tiktokenizer):
-    # 这里是把0维度的batch给去掉了。
-    token_ids = token_ids_tensor.squeeze(0).tolist()
+    if isinstance(token_ids_tensor,Tensor):
+        # 这里是把0维度的batch给去掉了。
+        token_ids = token_ids_tensor.squeeze(0).tolist()
+    else:
+        # 非 Tensor 输入（list / tuple）：本身就已经是 id 序列，直接转成 list，
+        # 不要 tensor(...).squeeze(0)——那要求第 0 维为 1，对普通 id 列表是错的
+        token_ids = list(token_ids_tensor)
+    
     token_str = tiktokenizer.decode(token_ids)
     return token_str
 
@@ -82,7 +88,7 @@ def test():
     inputStr = "The morning sunlight is filtering through the leaves, casting dancing shadows on the ground.<|endoftext|> In thesunlit terraces of someunknownPlace."
     token_ids = tiktokenizer2idsUnsq(inputStr,tiktokenizer)
     logger.info(f'tiktokenizer2ids 的测试 : {token_ids}')
-    logger.info(f'tiktokenizer2txts 的测试 : {tiktokenizer2txtsSq(token_ids,tiktokenizer)}')
+    logger.info(f'tiktokenizer2txts 的测试 : {tokenizer2txtsSq(token_ids,tiktokenizer)}')
 
 if __name__=="__main__":
     test()

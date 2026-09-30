@@ -1,16 +1,17 @@
 import time  # 1. 引入时间模块
 from kpc_llm.layers.kpc_llm_model.kpc_llm_model import KpcLLMModel
-from kpc_llm.layers.kpc_llm_model.pretraining.train_loss_calcu import calcuOneBatchCrossEnLoss,caluBatchesCrossEnLoss
+from kpc_llm.layers.kpc_llm_model.pretraining.train_loss_calcu import calcuOneBatchCrossEnLoss
 from kpc_llm.layers.kpc_llm_model.token_process.tokenizer_hub import tiktokenizer2idsUnsq,tokenizer2txtsSq
 from kpc_llm.layers.kpc_llm_model.pretraining.train_data_div3_load import divDatas2TraValTes
 from kpc_llm.layers.kpc_llm_model.pretraining.generate_and_print_sample import generate_and_print_sample
 from kpc_llm.layers.kpc_llm_model.pretraining.evaluate_model import evaluate_model
 from kpc_llm.data_fetch.textloader import getTxtStr
+from kpc_llm.utils import val_plot
 from kpc_llm.utils.logger import getlogger
+from kpc_llm.utils.val_plot import plot_loss
 import tiktoken
 import torch
-from pyprojroot import here
-from transformers import AutoTokenizer
+# from transformers import AutoTokenizer
 # from torch.utils.data import dataloader
 # import multiprocessing
 
@@ -37,7 +38,8 @@ TRAIN_CNF = {
 """
 # gpt2 tiktokenizer cl100k_base vocab_size 100277
 tokenizer =tiktoken.get_encoding("cl100k_base") 
-dataFileName = "tinystories_20mb.txt"
+# dataFileName = "tinystories_20mb.txt"
+dataFileName = "the-verdict.txt"
 dataDoc = "data"
 start_context = "Long long ago, there is a girl "
 
@@ -58,12 +60,14 @@ start_context = "Long long ago, there is a girl "
 # start_context = "这是一个小红帽的故事，从前 "
 
 def train_model_simple(model, train_loader, val_loader, optimizer, device, num_epochs,
-                       eval_freq, start_context):
+                       eval_freq, start_context,context_len):
     # 初始化跟踪训练的参数
     train_losses, val_losses, track_tokens_seen = [], [], []
     tokens_seen, global_step = 0, -1
     # 训练集 loss 的滑动平均（EMA），避免评估时再去迭代 train_loader
     train_loss_ema = None
+    # 记录最后一次评估时的 global_step，用于在每个 epoch 结束时兜底
+    last_eval_step = -2
 
     # 初始化时间和Token记录变量，用于计算吞吐量
     last_time = time.time()
@@ -82,6 +86,9 @@ def train_model_simple(model, train_loader, val_loader, optimizer, device, num_e
         batch_size  = train_loader.batch_size                  # 每个 batch 的样本数
         token_num   = sample_num * one_sample_token_num   # 一个 epoch 覆盖的 token 总数
 
+        # 如果 eval_freq 比 batch_num 还大，一个 epoch 内永远触发不了第二次评估，
+        # 自动把它降到 batch_num，保证每个 epoch 至少能有一次常规评估。
+        effective_eval_freq = max(1, min(eval_freq, batch_num))
         
         logger.info(f"-------------------- Ep {epoch+1}/{num_epochs} Training (batch_num={batch_num}) ------------------: ")
         logger.info(f"--每个样本的token数：{one_sample_token_num}，每批次样本数: {batch_size},总共多少批次: {batch_num},一个Epoch覆盖的token总数: {token_num}--: ")
@@ -103,8 +110,8 @@ def train_model_simple(model, train_loader, val_loader, optimizer, device, num_e
             # 维护训练集 loss 的滑动平均，比较经典的1/1-0.9 = 10 ，最新的loss只是加权平均的1/10 ，这样可以消除loss的抖动做展示。
             train_loss_ema = loss_val if train_loss_ema is None else 0.9 * train_loss_ema + 0.1 * loss_val
 
-            # 1.训练评估步骤， 每 eval_freq 次batch，对训练进行评估
-            if global_step % eval_freq == 0:
+            # 1.训练评估步骤， 每 effective_eval_freq 次batch，对训练进行评估
+            if global_step % effective_eval_freq == 0:
                 # 获取评估数据
                 train_data_loss, val_data_loss = evaluate_model(
                     model, val_loader, device, cur_train_loss=train_loss_ema)
@@ -113,6 +120,7 @@ def train_model_simple(model, train_loader, val_loader, optimizer, device, num_e
                 train_losses.append(train_data_loss)
                 val_losses.append(val_data_loss)
                 track_tokens_seen.append(tokens_seen)
+                last_eval_step = global_step
                 
                 # 3. 计算训练速度/性能的逻辑(tokens/s)
                 current_time = time.time()
@@ -138,9 +146,22 @@ def train_model_simple(model, train_loader, val_loader, optimizer, device, num_e
                 last_time = current_time
                 last_tokens_seen = tokens_seen
 
+        # 兜底：每个 epoch 结束时如果还没评估过，就强制评估一次，保证至少 num_epochs 个点能画图。
+        # 当 effective_eval_freq 已经兜底降到 batch_num 时，通常会在这里触发一次 epoch-end 评估。
+        if last_eval_step != global_step:
+            train_data_loss, val_data_loss = evaluate_model(
+                model, val_loader, device, cur_train_loss=train_loss_ema)
+            train_losses.append(train_data_loss)
+            val_losses.append(val_data_loss)
+            track_tokens_seen.append(tokens_seen)
+            last_eval_step = global_step
+            # 同样更新时间基准，避免下一 epoch 的 speed 把中间等待时间算进去
+            last_time = time.time()
+            last_tokens_seen = tokens_seen
+
         # Print a sample text after each epoch
         generate_and_print_sample(
-            model, device, start_context,tiktokenizer2idsUnsq,tokenizer2txtsSq,tokenizer,100
+            model, device,context_len,start_context,tiktokenizer2idsUnsq,tokenizer2txtsSq,tokenizer,100
         )
 
     return train_losses, val_losses, track_tokens_seen
@@ -173,7 +194,8 @@ def training_model(num_epochs =1):
     train_losses, val_losses, tokens_seen = train_model_simple(
         model, trainDsloader, valDsloader, optimizer, device,
         num_epochs, eval_freq=16,
-        start_context = start_context
+        start_context = start_context,
+        context_len=TRAIN_CNF['cntext_lnth']
     )
     return train_losses, val_losses, tokens_seen
 
@@ -183,4 +205,16 @@ def training_model(num_epochs =1):
 # "An attempt has been made to start a new process before ..." RuntimeError。
 if __name__ == "__main__":
     # multiprocessing.freeze_support()
-    training_model(2)
+    num_epochs = 1
+    train_losses, val_losses, tokens_seen = training_model(num_epochs)
+    # plot_loss 的第二个参数必须是与 loss 等长的"累计 token 数"序列（给第二条 X 轴对齐刻度用）。
+    # 传标量 len(tokens) 会让 matplotlib 直接抛错：
+    # ValueError: x and y must have same first dimension, but have shapes (1,) and (N,)
+    # 第一个参数是 epoch 轴，值域应为 0 -> num_epochs（不是评估次数）
+    tokens_seen_num =tokens_seen[-1]
+
+
+    epochs = torch.linspace(0, num_epochs, len(train_losses))
+    tokens = torch.linspace(0, tokens_seen_num, len(train_losses))
+    logger.info(f"loss 点数: {len(train_losses)} | 学习过的token数量: {tokens_seen_num}")
+    plot_loss(epochs, tokens, train_losses, val_losses)

@@ -49,6 +49,7 @@ data/*.bin
 !data/.gitkeep
 
 # Logs
+logs/
 *.log
 
 # OS

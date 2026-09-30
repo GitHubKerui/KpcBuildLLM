@@ -85,7 +85,7 @@ class MultiHeadAttention(nn.Module):
         attention_scores = queries @ keys.transpose(2,3)
         #添加因果注意力，防止未来词元被窥探影响训练
         # attention_causal_scores = setUpNegativeInfMask(attention_scores,self)
-        attention_causal_scores = attention_scores.masked_fill(self.causal_mask[:num_token,:num_token],float("-inf"))
+        attention_causal_scores = attention_scores.masked_fill(self.causal_mask[:num_token,:num_token],float("-inf")) 
         # logger.info(f'attention_causal_scores : {attention_causal_scores}')
         # scale得到归一化的分数，权重，必须通过范数softmax得到统一（尺度，量度）的赋范空间才可以进行后续统一处理。
         attention_causal_weights = softmax(attention_causal_scores / queries.shape[-1]**0.5 ,dim = -1)
