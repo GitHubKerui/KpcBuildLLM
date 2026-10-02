@@ -8,9 +8,8 @@
 """
 import random
 import re
-
-from torch import argmax, tensor,multinomial,bincount,manual_seed
-
+from torch import Tensor, argmax, tensor,multinomial,bincount,manual_seed,topk,where
+from kpc_llm.utils.bar_plot import plot_grouped_bar
 from kpc_llm.utils.logger import getlogger
 
 logger = getlogger()
@@ -36,14 +35,14 @@ logger.info(verse_vocab)
 random.seed(825)
 manual_seed(825)
 # 模拟最后一个预测token的词表分数,这种方法的精度真的就是保留2位为止
-random_sample = random.sample([ x/100 for x in range(100,1000)],6)
+random_sample = random.sample([ x/100 for x in range(100,1000)],9)
 random_sample_sf = tensor(random_sample).softmax(-1)
 
 logger.info(f"random_sample : {random_sample}")
 logger.info(f"random_sample softmax: {random_sample_sf}")
 
 # uniform的精度是长精度的，ai中使用这个。
-random_uniform: list[float] = [ round(random.uniform(1.00,10.00),2) for i in range(6) ] 
+random_uniform: list[float] = [ round(random.uniform(1.00,10.00),2) for i in range(9) ] 
 random_uniform_sf = tensor(random_uniform).softmax(-1)
 
 logger.info(f"random_uniform : {random_uniform}")
@@ -55,14 +54,14 @@ logger.info(f"random_sample argmax_get : ({argmax_get},{random_sample[argmax_get
 argmax_get_2 = argmax(tensor(random_uniform))
 logger.info(f"random_sample argmax_get : ({argmax_get_2},{random_uniform[argmax_get_2]})")
 
-#测试multinomial的真实分布抽样100次,replacement=True表示有放回抽样，抽样样本被重新replace，当第二个参数采样数量大于样本数量时候，必须replacement=true。否则是无放回采样
+"""测试multinomial的真实分布抽样100次,replacement=True表示有放回抽样，抽样样本被重新replace，当第二个参数采样数量大于样本数量时候，必须replacement=true。否则是无放回采样"""
 samples100 = multinomial(random_sample_sf,100,replacement=True)
 samples100_2 =  multinomial(random_uniform_sf,100,replacement=True)
 
 logger.info(f"samples100 : {samples100}")
 logger.info(f"samples100_2 : {samples100_2}")
 
-# 测试 bincount 获取抽样词频的统计
+""" 测试bincount 获取抽样词频的统计"""
 bincount_re = bincount(samples100,minlength=len(random_sample_sf)).tolist()
 bincount_re_2 = bincount(samples100_2,minlength=len(random_uniform_sf)).tolist()
 
@@ -86,3 +85,55 @@ for ele in vac_binc_re:
 logger.info("--------------------------------------------------------------------------------------")
 for ele in vac_binc_re_2:
     logger.info(ele)
+
+
+""" 测试同一组数据的不同的 temperature 带来的分布的均匀化 和 尖峰化 uniformly ，peaky """
+def test_temperature(x_tensor:Tensor,sf_dim=-1,temperature=1.0):
+     x_tensor = x_tensor/temperature
+     x_sf = x_tensor.softmax(sf_dim)
+     print(f"x_tensor : {x_tensor} ,temperature : {temperature}")
+     print(f"x_sf : {x_sf}")
+     return x_sf
+
+test_temperature(tensor(random_sample))
+test_temperature(tensor(random_sample),temperature=0.5)
+test_temperature(tensor(random_sample),temperature=2)
+
+""" 测试top_k """
+
+
+
+# 画柱状图
+group_names =["temperature 0.5","temperature 1","temperature 1.5"]
+
+
+# 概率分布中只抽取排名前top-k的概率,返回一个topk的元祖，封装了数据和index
+random_sample_top4_logits,top4_index = topk(tensor(random_sample),4) 
+# 取topk最小值
+logger.info("----------------------------------取topk最小值----------------------------------------------------")
+logger.info(random_sample_top4_logits.shape)
+topmin = random_sample_top4_logits[-1]
+logger.info(topmin.shape)
+logger.info(topmin)
+# topk最小值以下都赋0
+random_sample = tensor(random_sample)
+# 满足条件 取值来自 1，tensor(float("-inf")) 不满足条件 取值来自 2random_sample
+random_sample =  where(topmin>random_sample,tensor(float("-inf")).to(random_sample.device),random_sample)
+
+# 获取top4范围的vac
+val_names = [verse_vocab[ele] for ele in top4_index.tolist()]
+# 获取temperature调整三次后的3组概率分布,这个分布已经是top4之后，其他设置成 tensor(float("-inf"))
+datasettmpture2 = [ test_temperature(random_sample,temperature=(i+1)*0.5) for i in range(3)]
+# 从9个样本类型调整到前4的四类型分布后，放回抽样200次
+dataset3 = [ multinomial(ds,200,replacement=True) for ds in datasettmpture2]
+# 用bincount 统计3组概率分布抽样结果
+bincount_re_3 = [bincount(ele,minlength=len(verse_vocab)).tolist() for ele in dataset3]
+# logger.info("--------------------------------------------------------------------------------------")
+# logger.info(val_names)
+logger.info("--------------------------------------------------------------------------------------")
+logger.info(bincount_re_3)
+
+
+plot_grouped_bar(group_names,list(vocab.keys()),dataset=bincount_re_3)
+
+
