@@ -38,8 +38,8 @@ TRAIN_CNF = {
 """
 # gpt2 tiktokenizer cl100k_base vocab_size 100277
 tokenizer =tiktoken.get_encoding("cl100k_base") 
-# dataFileName = "tinystories_20mb.txt"
-dataFileName = "the-verdict.txt"
+dataFileName = "tinystories_20mb.txt"
+# dataFileName = "the-verdict.txt"
 dataDoc = "data"
 start_context = "Long long ago, there is a girl "
 
@@ -205,7 +205,7 @@ def training_model(num_epochs =1):
 # "An attempt has been made to start a new process before ..." RuntimeError。
 if __name__ == "__main__":
     # multiprocessing.freeze_support()
-    num_epochs = 1
+    num_epochs = 2
     train_losses, val_losses, tokens_seen = training_model(num_epochs)
     # plot_loss 的第二个参数必须是与 loss 等长的"累计 token 数"序列（给第二条 X 轴对齐刻度用）。
     # 传标量 len(tokens) 会让 matplotlib 直接抛错：

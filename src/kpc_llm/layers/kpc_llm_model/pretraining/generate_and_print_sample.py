@@ -13,7 +13,7 @@ def generate_and_print_sample(model, device, context_len,start_context,txt2idsFn
     # input_ids = qwtokenizer2ids(start_context,tokenizer).to(device)
     input_ids = txt2idsFn(start_context,tokenizer).to(device)
     with torch.no_grad():
-        token_ids = generate_txt_loop(input_ids,context_len,model,generate_len)  
+        token_ids = generate_txt_loop(input_ids,context_len,model,generate_len,1,3)  
         decoded_text = ids2txtFn(token_ids,tokenizer)
         logger.info(decoded_text.replace("\n", " "))  # Compact print format
-    model.train()
+    # model.train()
