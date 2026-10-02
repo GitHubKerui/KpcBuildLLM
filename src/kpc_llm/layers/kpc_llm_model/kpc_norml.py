@@ -15,6 +15,8 @@ class KpcNormal(nn.Module):
         mean = x.mean(dim=-1,keepdim=True)
         # 2 算出方差最后一个维度的方差，用了有偏估计的设置。
         var = x.var(dim=-1,keepdim=True,unbiased = self.unbiased)
+        # 这里必须在开放时候+eps，
+        # 因为反向传播时候 ，x^1/2 会变成  1/2 * x^-1/2 ,这时候x变成分母，如果把 eps放在求norm的步骤会导致反向传播出现分母为0
         varsqrt = sqrt(var + self.eps)
         # 3 整个网络拉回中心0点，均方差 1.
         x_norm = (x - mean) / varsqrt

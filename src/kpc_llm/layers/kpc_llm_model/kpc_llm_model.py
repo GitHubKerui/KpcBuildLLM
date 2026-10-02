@@ -41,6 +41,7 @@ class KpcLLMModel(nn.Module):
         self.vocab_emb = nn.Embedding(vcab_sz,emb_dim)
         self.pstn_emb = nn.Embedding( max_cntxt_pstion_lnth,emb_dim)
         self.drop = nn.Dropout(drop_rt)
+        # 用*把list解包后才行，Sequential必须一个一个的Moudle当参数 
         self.trnsf_blocks = nn.Sequential(*[KpcTransformerBlock(cnf) for _ in range(trnsf_blocks_num)])
         self.final_norml = KpcNormal(emb_dim)
         self.out_liner = nn.Linear(emb_dim,vcab_sz,bias=qkv_bias)
