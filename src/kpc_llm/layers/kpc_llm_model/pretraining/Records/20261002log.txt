@@ -1,0 +1,259 @@
+PS K:\KpcAIDev\KpcBuildLLM> & k:/KpcAIDev/KpcBuildLLM/.venv/Scripts/python.exe k:/KpcAIDev/KpcBuildLLM/src/kpc_llm/layers/kpc_llm_model/pretraining/eff_calcu_train_loop.py
+2026-10-02 19:26:20 | INFO | eff_calcu_train_loop.py:172 | cuda is True
+2026-10-02 19:26:20 | INFO | eff_calcu_train_loop.py:184 | train_txt length : 10465575
+2026-10-02 19:26:21 | INFO | tokenid_ds_loader.py:38 | token num : 1984223
+2026-10-02 19:26:21 | INFO | tokenid_ds_loader.py:38 | token num : 248028
+2026-10-02 19:26:21 | INFO | tokenid_ds_loader.py:38 | token num : 248028
+2026-10-02 19:26:21 | INFO | eff_calcu_train_loop.py:93 | -------------------- Ep 1/2 Training (batch_num=969) ------------------: 
+2026-10-02 19:26:21 | INFO | eff_calcu_train_loop.py:94 | --每个样本的token数：256，每批次样本数: 16,总共多少批次: 969,一个Epoch覆盖的token总数: 3968000--:
+2026-10-02 19:27:23 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000001/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 11.661, Val loss: 10.558 | Speed: 67 tokens/s
+This Epoch Finish: 0.103% | Global Step: 0
+2026-10-02 19:27:25 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000017/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 7.885, Val loss: 6.336 | Speed: 28655 tokens/s
+This Epoch Finish: 1.754% | Global Step: 16
+2026-10-02 19:27:27 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000033/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 6.190, Val loss: 5.890 | Speed: 28705 tokens/s
+This Epoch Finish: 3.406% | Global Step: 32
+2026-10-02 19:27:30 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000049/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 5.412, Val loss: 5.809 | Speed: 28642 tokens/s
+This Epoch Finish: 5.057% | Global Step: 48
+2026-10-02 19:27:32 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000065/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 5.192, Val loss: 5.370 | Speed: 28382 tokens/s
+This Epoch Finish: 6.708% | Global Step: 64
+2026-10-02 19:27:34 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000081/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 4.929, Val loss: 4.798 | Speed: 27922 tokens/s
+This Epoch Finish: 8.359% | Global Step: 80
+2026-10-02 19:27:37 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000097/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 4.744, Val loss: 4.675 | Speed: 28357 tokens/s
+This Epoch Finish: 10.010% | Global Step: 96
+2026-10-02 19:27:39 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000113/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 4.646, Val loss: 4.598 | Speed: 28468 tokens/s
+This Epoch Finish: 11.662% | Global Step: 112
+2026-10-02 19:27:41 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000129/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 4.807, Val loss: 5.012 | Speed: 28431 tokens/s
+This Epoch Finish: 13.313% | Global Step: 128
+2026-10-02 19:27:43 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000145/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 4.561, Val loss: 4.771 | Speed: 28431 tokens/s
+This Epoch Finish: 14.964% | Global Step: 144
+2026-10-02 19:27:46 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000161/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 4.680, Val loss: 4.742 | Speed: 27651 tokens/s
+This Epoch Finish: 16.615% | Global Step: 160
+2026-10-02 19:27:48 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000177/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 4.634, Val loss: 4.765 | Speed: 27946 tokens/s
+This Epoch Finish: 18.266% | Global Step: 176
+2026-10-02 19:27:51 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000193/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 4.596, Val loss: 4.700 | Speed: 27034 tokens/s
+This Epoch Finish: 19.917% | Global Step: 192
+2026-10-02 19:27:53 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000209/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 4.584, Val loss: 4.473 | Speed: 28089 tokens/s
+This Epoch Finish: 21.569% | Global Step: 208
+2026-10-02 19:27:55 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000225/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 4.388, Val loss: 4.318 | Speed: 26714 tokens/s
+This Epoch Finish: 23.220% | Global Step: 224
+2026-10-02 19:27:58 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000241/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 4.263, Val loss: 4.235 | Speed: 27056 tokens/s
+This Epoch Finish: 24.871% | Global Step: 240
+2026-10-02 19:28:00 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000257/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 4.171, Val loss: 4.429 | Speed: 27453 tokens/s
+This Epoch Finish: 26.522% | Global Step: 256
+2026-10-02 19:28:03 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000273/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 4.405, Val loss: 4.490 | Speed: 26541 tokens/s
+This Epoch Finish: 28.173% | Global Step: 272
+2026-10-02 19:28:05 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000289/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 4.357, Val loss: 4.481 | Speed: 26466 tokens/s
+This Epoch Finish: 29.825% | Global Step: 288
+2026-10-02 19:28:07 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000305/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 4.031, Val loss: 4.434 | Speed: 27874 tokens/s
+This Epoch Finish: 31.476% | Global Step: 304
+2026-10-02 19:28:10 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000321/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 4.313, Val loss: 4.550 | Speed: 28419 tokens/s
+This Epoch Finish: 33.127% | Global Step: 320
+2026-10-02 19:28:12 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000337/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 4.251, Val loss: 4.557 | Speed: 27969 tokens/s
+This Epoch Finish: 34.778% | Global Step: 336
+2026-10-02 19:28:15 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000353/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 4.238, Val loss: 4.574 | Speed: 27476 tokens/s
+This Epoch Finish: 36.429% | Global Step: 352
+2026-10-02 19:28:17 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000369/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 4.324, Val loss: 4.466 | Speed: 27721 tokens/s
+This Epoch Finish: 38.080% | Global Step: 368
+2026-10-02 19:28:19 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000385/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 4.279, Val loss: 4.469 | Speed: 27934 tokens/s
+This Epoch Finish: 39.732% | Global Step: 384
+2026-10-02 19:28:22 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000401/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.921, Val loss: 4.367 | Speed: 28310 tokens/s
+This Epoch Finish: 41.383% | Global Step: 400
+2026-10-02 19:28:24 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000417/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 4.252, Val loss: 4.404 | Speed: 28332 tokens/s
+This Epoch Finish: 43.034% | Global Step: 416
+2026-10-02 19:28:26 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000433/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 4.269, Val loss: 4.426 | Speed: 28114 tokens/s
+This Epoch Finish: 44.685% | Global Step: 432
+2026-10-02 19:28:29 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000449/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 4.135, Val loss: 4.388 | Speed: 27827 tokens/s
+This Epoch Finish: 46.336% | Global Step: 448
+2026-10-02 19:28:31 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000465/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 4.196, Val loss: 4.386 | Speed: 28150 tokens/s
+This Epoch Finish: 47.988% | Global Step: 464
+2026-10-02 19:28:33 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000481/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 4.147, Val loss: 4.385 | Speed: 28150 tokens/s
+This Epoch Finish: 49.639% | Global Step: 480
+2026-10-02 19:28:36 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000497/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 4.136, Val loss: 4.380 | Speed: 28296 tokens/s
+This Epoch Finish: 51.290% | Global Step: 496
+2026-10-02 19:28:38 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000513/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 4.016, Val loss: 4.277 | Speed: 28332 tokens/s
+This Epoch Finish: 52.941% | Global Step: 512
+2026-10-02 19:28:40 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000529/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 4.053, Val loss: 4.375 | Speed: 27756 tokens/s
+This Epoch Finish: 54.592% | Global Step: 528
+2026-10-02 19:28:43 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000545/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 4.085, Val loss: 3.998 | Speed: 27946 tokens/s
+This Epoch Finish: 56.244% | Global Step: 544
+2026-10-02 19:28:45 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000561/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.849, Val loss: 4.057 | Speed: 27662 tokens/s
+This Epoch Finish: 57.895% | Global Step: 560
+2026-10-02 19:28:47 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000577/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.560, Val loss: 4.151 | Speed: 27934 tokens/s
+This Epoch Finish: 59.546% | Global Step: 576
+2026-10-02 19:28:50 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000593/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.823, Val loss: 3.893 | Speed: 28271 tokens/s
+This Epoch Finish: 61.197% | Global Step: 592
+2026-10-02 19:28:52 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000609/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 4.074, Val loss: 3.995 | Speed: 28271 tokens/s
+This Epoch Finish: 62.848% | Global Step: 608
+2026-10-02 19:28:54 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000625/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 4.101, Val loss: 4.074 | Speed: 28284 tokens/s
+This Epoch Finish: 64.499% | Global Step: 624
+2026-10-02 19:28:57 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000641/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.642, Val loss: 4.051 | Speed: 28162 tokens/s
+This Epoch Finish: 66.151% | Global Step: 640
+2026-10-02 19:28:59 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000657/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.690, Val loss: 3.816 | Speed: 27969 tokens/s
+This Epoch Finish: 67.802% | Global Step: 656
+2026-10-02 19:29:01 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000673/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.646, Val loss: 3.784 | Speed: 28394 tokens/s
+This Epoch Finish: 69.453% | Global Step: 672
+2026-10-02 19:29:04 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000689/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.722, Val loss: 3.686 | Speed: 28345 tokens/s
+This Epoch Finish: 71.104% | Global Step: 688
+2026-10-02 19:29:06 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000705/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.678, Val loss: 3.660 | Speed: 28198 tokens/s
+This Epoch Finish: 72.755% | Global Step: 704
+2026-10-02 19:29:08 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000721/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.473, Val loss: 3.682 | Speed: 27768 tokens/s
+This Epoch Finish: 74.407% | Global Step: 720
+2026-10-02 19:29:11 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000737/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.584, Val loss: 3.616 | Speed: 27191 tokens/s
+This Epoch Finish: 76.058% | Global Step: 736
+2026-10-02 19:29:13 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000753/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.821, Val loss: 3.775 | Speed: 27157 tokens/s
+This Epoch Finish: 77.709% | Global Step: 752
+2026-10-02 19:29:15 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000769/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.928, Val loss: 3.804 | Speed: 27157 tokens/s
+This Epoch Finish: 79.360% | Global Step: 768
+2026-10-02 19:29:18 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000785/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.513, Val loss: 3.732 | Speed: 28089 tokens/s
+This Epoch Finish: 81.011% | Global Step: 784
+2026-10-02 19:29:20 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000801/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.576, Val loss: 3.557 | Speed: 26595 tokens/s
+This Epoch Finish: 82.663% | Global Step: 800
+2026-10-02 19:29:23 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000817/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.515, Val loss: 3.516 | Speed: 26444 tokens/s
+This Epoch Finish: 84.314% | Global Step: 816
+2026-10-02 19:29:25 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000833/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.503, Val loss: 3.514 | Speed: 28259 tokens/s
+This Epoch Finish: 85.965% | Global Step: 832
+2026-10-02 19:29:27 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000849/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.898, Val loss: 3.751 | Speed: 26978 tokens/s
+This Epoch Finish: 87.616% | Global Step: 848
+2026-10-02 19:29:30 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000865/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.724, Val loss: 3.659 | Speed: 26327 tokens/s
+This Epoch Finish: 89.267% | Global Step: 864
+2026-10-02 19:29:32 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000881/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.896, Val loss: 3.730 | Speed: 27453 tokens/s
+This Epoch Finish: 90.918% | Global Step: 880
+2026-10-02 19:29:35 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000897/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.717, Val loss: 3.688 | Speed: 28150 tokens/s
+This Epoch Finish: 92.570% | Global Step: 896
+2026-10-02 19:29:37 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000913/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.746, Val loss: 3.735 | Speed: 27957 tokens/s
+This Epoch Finish: 94.221% | Global Step: 912
+2026-10-02 19:29:39 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000929/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.521, Val loss: 3.686 | Speed: 27957 tokens/s
+This Epoch Finish: 95.872% | Global Step: 928
+2026-10-02 19:29:42 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000945/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.522, Val loss: 3.502 | Speed: 27874 tokens/s
+This Epoch Finish: 97.523% | Global Step: 944
+2026-10-02 19:29:44 | INFO | eff_calcu_train_loop.py:136 | Ep 1/2 (BatchAll : 969) (Batch now : 000961/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.362, Val loss: 3.563 | Speed: 28394 tokens/s
+This Epoch Finish: 99.174% | Global Step: 960
+2026-10-02 19:29:47 | INFO | generate_and_print_sample.py:18 | Long long ago, there is a girl 3 year old man named Lily. Tim was very happy. Timmy wanted 
+to help the play. He had a new toy. Timmy didn't know where he was very excited and said, "I can't help you."   Timmy said, "Yes, I will be a new friend." Timmy. "I want to play. I will be so much fun together."  Timmy was happy and happy, Timmy was so happy and said, "Yes, I have a new
+2026-10-02 19:29:47 | INFO | eff_calcu_train_loop.py:93 | -------------------- Ep 2/2 Training (batch_num=969) ------------------: 
+2026-10-02 19:29:47 | INFO | eff_calcu_train_loop.py:94 | --每个样本的token数：256，每批次样本数: 16,总共多少批次: 969,一个Epoch覆盖的token总数: 3968000--:
+2026-10-02 19:29:48 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000008/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.555, Val loss: 3.625 | Speed: 11709 tokens/s
+This Epoch Finish: 0.826% | Global Step: 976
+2026-10-02 19:29:51 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000024/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.754, Val loss: 3.742 | Speed: 28271 tokens/s
+This Epoch Finish: 2.477% | Global Step: 992
+2026-10-02 19:29:53 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000040/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.752, Val loss: 3.721 | Speed: 27910 tokens/s
+This Epoch Finish: 4.128% | Global Step: 1008
+2026-10-02 19:29:55 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000056/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.724, Val loss: 3.735 | Speed: 28369 tokens/s
+This Epoch Finish: 5.779% | Global Step: 1024
+2026-10-02 19:29:57 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000072/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.498, Val loss: 3.465 | Speed: 28394 tokens/s
+This Epoch Finish: 7.430% | Global Step: 1040
+2026-10-02 19:30:00 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000088/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.337, Val loss: 3.460 | Speed: 28382 tokens/s
+This Epoch Finish: 9.082% | Global Step: 1056
+2026-10-02 19:30:02 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000104/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.376, Val loss: 3.404 | Speed: 28041 tokens/s
+This Epoch Finish: 10.733% | Global Step: 1072
+2026-10-02 19:30:04 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000120/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.592, Val loss: 3.516 | Speed: 27898 tokens/s
+This Epoch Finish: 12.384% | Global Step: 1088
+2026-10-02 19:30:07 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000136/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.703, Val loss: 3.630 | Speed: 27934 tokens/s
+This Epoch Finish: 14.035% | Global Step: 1104
+2026-10-02 19:30:09 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000152/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.442, Val loss: 3.481 | Speed: 28259 tokens/s
+This Epoch Finish: 15.686% | Global Step: 1120
+2026-10-02 19:30:11 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000168/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.661, Val loss: 3.620 | Speed: 28394 tokens/s
+This Epoch Finish: 17.337% | Global Step: 1136
+2026-10-02 19:30:14 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000184/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.651, Val loss: 3.589 | Speed: 28431 tokens/s
+This Epoch Finish: 18.989% | Global Step: 1152
+2026-10-02 19:30:16 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000200/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.617, Val loss: 3.597 | Speed: 28101 tokens/s
+This Epoch Finish: 20.640% | Global Step: 1168
+2026-10-02 19:30:18 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000216/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.548, Val loss: 3.390 | Speed: 28284 tokens/s
+This Epoch Finish: 22.291% | Global Step: 1184
+2026-10-02 19:30:21 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000232/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.432, Val loss: 3.337 | Speed: 28101 tokens/s
+This Epoch Finish: 23.942% | Global Step: 1200
+2026-10-02 19:30:23 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000248/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.293, Val loss: 3.304 | Speed: 28162 tokens/s
+This Epoch Finish: 25.593% | Global Step: 1216
+2026-10-02 19:30:25 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000264/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.307, Val loss: 3.456 | Speed: 27780 tokens/s
+This Epoch Finish: 27.245% | Global Step: 1232
+2026-10-02 19:30:28 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000280/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.527, Val loss: 3.531 | Speed: 26725 tokens/s
+This Epoch Finish: 28.896% | Global Step: 1248
+2026-10-02 19:30:30 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000296/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.348, Val loss: 3.429 | Speed: 27922 tokens/s
+This Epoch Finish: 30.547% | Global Step: 1264
+2026-10-02 19:30:33 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000312/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.442, Val loss: 3.458 | Speed: 27639 tokens/s
+This Epoch Finish: 32.198% | Global Step: 1280
+2026-10-02 19:30:35 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000328/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.593, Val loss: 3.532 | Speed: 27744 tokens/s
+This Epoch Finish: 33.849% | Global Step: 1296
+2026-10-02 19:30:37 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000344/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.580, Val loss: 3.533 | Speed: 27910 tokens/s
+This Epoch Finish: 35.501% | Global Step: 1312
+2026-10-02 19:30:40 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000360/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.572, Val loss: 3.536 | Speed: 28382 tokens/s
+This Epoch Finish: 37.152% | Global Step: 1328
+2026-10-02 19:30:42 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000376/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.563, Val loss: 3.537 | Speed: 28382 tokens/s
+This Epoch Finish: 38.803% | Global Step: 1344
+2026-10-02 19:30:44 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000392/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.331, Val loss: 3.470 | Speed: 28186 tokens/s
+This Epoch Finish: 40.454% | Global Step: 1360
+2026-10-02 19:30:47 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000408/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.292, Val loss: 3.447 | Speed: 28041 tokens/s
+This Epoch Finish: 42.105% | Global Step: 1376
+2026-10-02 19:30:49 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000424/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.576, Val loss: 3.574 | Speed: 28247 tokens/s
+This Epoch Finish: 43.756% | Global Step: 1392
+2026-10-02 19:30:51 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000440/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.271, Val loss: 3.501 | Speed: 28382 tokens/s
+This Epoch Finish: 45.408% | Global Step: 1408
+2026-10-02 19:30:54 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000456/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.481, Val loss: 3.550 | Speed: 28041 tokens/s
+This Epoch Finish: 47.059% | Global Step: 1424
+2026-10-02 19:30:56 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000472/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.533, Val loss: 3.582 | Speed: 28357 tokens/s
+This Epoch Finish: 48.710% | Global Step: 1440
+2026-10-02 19:30:58 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000488/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.501, Val loss: 3.589 | Speed: 27803 tokens/s
+This Epoch Finish: 50.361% | Global Step: 1456
+2026-10-02 19:31:01 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000504/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.327, Val loss: 3.525 | Speed: 27898 tokens/s
+This Epoch Finish: 52.012% | Global Step: 1472
+2026-10-02 19:31:03 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000520/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.453, Val loss: 3.599 | Speed: 27898 tokens/s
+This Epoch Finish: 53.664% | Global Step: 1488
+2026-10-02 19:31:05 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000536/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.512, Val loss: 3.407 | Speed: 28332 tokens/s
+This Epoch Finish: 55.315% | Global Step: 1504
+2026-10-02 19:31:08 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000552/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.319, Val loss: 3.307 | Speed: 28394 tokens/s
+This Epoch Finish: 56.966% | Global Step: 1520
+2026-10-02 19:31:10 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000568/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.015, Val loss: 3.479 | Speed: 28308 tokens/s
+This Epoch Finish: 58.617% | Global Step: 1536
+2026-10-02 19:31:12 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000584/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 2.926, Val loss: 3.405 | Speed: 28150 tokens/s
+This Epoch Finish: 60.268% | Global Step: 1552
+2026-10-02 19:31:15 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000600/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.161, Val loss: 3.256 | Speed: 28235 tokens/s
+This Epoch Finish: 61.920% | Global Step: 1568
+2026-10-02 19:31:17 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000616/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.527, Val loss: 3.446 | Speed: 28077 tokens/s
+This Epoch Finish: 63.571% | Global Step: 1584
+2026-10-02 19:31:19 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000632/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.448, Val loss: 3.468 | Speed: 28443 tokens/s
+This Epoch Finish: 65.222% | Global Step: 1600
+2026-10-02 19:31:21 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000648/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.022, Val loss: 3.377 | Speed: 28468 tokens/s
+This Epoch Finish: 66.873% | Global Step: 1616
+2026-10-02 19:31:24 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000664/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.054, Val loss: 3.237 | Speed: 28296 tokens/s
+This Epoch Finish: 68.524% | Global Step: 1632
+2026-10-02 19:31:26 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000680/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.161, Val loss: 3.218 | Speed: 28005 tokens/s
+This Epoch Finish: 70.175% | Global Step: 1648
+2026-10-02 19:31:28 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000696/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.095, Val loss: 3.263 | Speed: 27922 tokens/s
+This Epoch Finish: 71.827% | Global Step: 1664
+2026-10-02 19:31:31 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000712/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.030, Val loss: 3.227 | Speed: 27981 tokens/s
+This Epoch Finish: 73.478% | Global Step: 1680
+2026-10-02 19:31:33 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000728/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.038, Val loss: 3.169 | Speed: 28357 tokens/s
+This Epoch Finish: 75.129% | Global Step: 1696
+2026-10-02 19:31:35 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000744/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 2.976, Val loss: 3.200 | Speed: 28382 tokens/s
+This Epoch Finish: 76.780% | Global Step: 1712
+2026-10-02 19:31:38 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000760/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.406, Val loss: 3.387 | Speed: 28394 tokens/s
+This Epoch Finish: 78.431% | Global Step: 1728
+2026-10-02 19:31:40 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000776/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.363, Val loss: 3.323 | Speed: 27993 tokens/s
+This Epoch Finish: 80.083% | Global Step: 1744
+2026-10-02 19:31:42 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000792/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.096, Val loss: 3.179 | Speed: 28235 tokens/s
+This Epoch Finish: 81.734% | Global Step: 1760
+2026-10-02 19:31:45 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000808/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.109, Val loss: 3.125 | Speed: 28235 tokens/s
+This Epoch Finish: 83.385% | Global Step: 1776
+2026-10-02 19:31:47 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000824/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.050, Val loss: 3.109 | Speed: 28357 tokens/s
+This Epoch Finish: 85.036% | Global Step: 1792
+2026-10-02 19:31:49 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000840/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.334, Val loss: 3.260 | Speed: 28443 tokens/s
+This Epoch Finish: 86.687% | Global Step: 1808
+2026-10-02 19:31:52 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000856/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.441, Val loss: 3.364 | Speed: 28186 tokens/s
+This Epoch Finish: 88.338% | Global Step: 1824
+2026-10-02 19:31:54 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000872/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.407, Val loss: 3.274 | Speed: 28089 tokens/s
+This Epoch Finish: 89.990% | Global Step: 1840
+2026-10-02 19:31:56 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000888/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.479, Val loss: 3.325 | Speed: 27934 tokens/s
+This Epoch Finish: 91.641% | Global Step: 1856
+2026-10-02 19:31:59 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000904/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.309, Val loss: 3.298 | Speed: 28029 tokens/s
+This Epoch Finish: 93.292% | Global Step: 1872
+2026-10-02 19:32:01 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000920/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.326, Val loss: 3.365 | Speed: 28382 tokens/s
+This Epoch Finish: 94.943% | Global Step: 1888
+2026-10-02 19:32:03 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000936/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.135, Val loss: 3.199 | Speed: 28332 tokens/s
+This Epoch Finish: 96.594% | Global Step: 1904
+2026-10-02 19:32:06 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000952/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 3.091, Val loss: 3.136 | Speed: 28259 tokens/s
+This Epoch Finish: 98.246% | Global Step: 1920
+2026-10-02 19:32:08 | INFO | eff_calcu_train_loop.py:136 | Ep 2/2 (BatchAll : 969) (Batch now : 000968/000969): input_batch.shape: torch.Size([16, 256]) target_batch.shape: torch.Size([16, 256]) Train loss: 2.904, Val loss: 3.219 | Speed: 28150 tokens/s
+This Epoch Finish: 99.897% | Global Step: 1936
+2026-10-02 19:32:10 | INFO | generate_and_print_sample.py:18 | Long long ago, there is a girl 3 years old. She loved playing outside and have a big, blue 
+dress. One day, her mom asked, "What's wrong?" Her mom replied, "I want to buy some ice cream."   Lily was so excited. She said, "I love my new toy."   Lily was happy to see what was inside the park. She said, "I want to play with it. I can't find the cake. Can I play with it?"  Her dad said, "
+2026-10-02 19:32:11 | INFO | eff_calcu_train_loop.py:219 | loss 点数: 124 | 学习过的token数量: 7936000
