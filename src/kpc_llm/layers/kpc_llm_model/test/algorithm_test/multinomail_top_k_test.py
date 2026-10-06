@@ -8,6 +8,7 @@
 """
 import random
 import re
+from struct import unpack_from
 from torch import Tensor, argmax, tensor,multinomial,bincount,manual_seed,topk,where
 from kpc_llm.utils.bar_plot import plot_grouped_bar
 from kpc_llm.utils.logger import getlogger
@@ -35,42 +36,44 @@ logger.info(verse_vocab)
 random.seed(825)
 manual_seed(825)
 # 模拟最后一个预测token的词表分数,这种方法的精度真的就是保留2位为止
-random_sample = random.sample([ x/100 for x in range(100,1000)],9)
-random_sample_sf = tensor(random_sample).softmax(-1)
+# sample 是无放回的随机。是均匀分布采样
+# choice 是放回的随机。是均匀分布采样
+smpl_rdm = random.sample([ x/100 for x in range(100,1000)],9)
+smpl_rdm_sf = tensor(smpl_rdm).softmax(-1)
 
-logger.info(f"random_sample : {random_sample}")
-logger.info(f"random_sample softmax: {random_sample_sf}")
+logger.info(f"random_sample : {smpl_rdm}")
+logger.info(f"random_sample softmax: {smpl_rdm_sf}")
 
 # uniform的精度是长精度的，ai中使用这个。
-random_uniform: list[float] = [ round(random.uniform(1.00,10.00),2) for i in range(9) ] 
-random_uniform_sf = tensor(random_uniform).softmax(-1)
+unifrm_rdm: list[float] = [ round(random.uniform(1.00,10.00),2) for i in range(9) ] 
+unifrm_rdm_sf = tensor(unifrm_rdm).softmax(-1)
 
-logger.info(f"random_uniform : {random_uniform}")
-logger.info(f"softmax random_uniform : {random_uniform_sf}")
+logger.info(f"random_uniform : {unifrm_rdm}")
+logger.info(f"softmax random_uniform : {unifrm_rdm_sf}")
 
-# 用argmax始终会取最大
-argmax_get = argmax(tensor(random_sample))
-logger.info(f"random_sample argmax_get : ({argmax_get},{random_sample[argmax_get]})")
-argmax_get_2 = argmax(tensor(random_uniform))
-logger.info(f"random_sample argmax_get : ({argmax_get_2},{random_uniform[argmax_get_2]})")
+# 用argmax始终会取最大值的index
+max_idx = argmax(tensor(smpl_rdm))
+logger.info(f"random_sample max_idx : ({max_idx},{smpl_rdm[max_idx]})")
+max_idx2 = argmax(tensor(unifrm_rdm))
+logger.info(f"random_sample max_idx2 : ({max_idx2},{unifrm_rdm[max_idx2]})")
 
 """测试multinomial的真实分布抽样100次,replacement=True表示有放回抽样，抽样样本被重新replace，当第二个参数采样数量大于样本数量时候，必须replacement=true。否则是无放回采样"""
-samples100 = multinomial(random_sample_sf,100,replacement=True)
-samples100_2 =  multinomial(random_uniform_sf,100,replacement=True)
+mtnmil_smpls100 = multinomial(smpl_rdm_sf,100,replacement=True)
+mtnmil_smpls100_2 =  multinomial(unifrm_rdm_sf,100,replacement=True)
 
-logger.info(f"samples100 : {samples100}")
-logger.info(f"samples100_2 : {samples100_2}")
+logger.info(f"samples100 : {mtnmil_smpls100}")
+logger.info(f"samples100_2 : {mtnmil_smpls100_2}")
 
 """ 测试bincount 获取抽样词频的统计"""
-bincount_re = bincount(samples100,minlength=len(random_sample_sf)).tolist()
-bincount_re_2 = bincount(samples100_2,minlength=len(random_uniform_sf)).tolist()
+bincount_re = bincount(mtnmil_smpls100,minlength=len(smpl_rdm_sf)).tolist()
+bincount_re_2 = bincount(mtnmil_smpls100_2,minlength=len(unifrm_rdm_sf)).tolist()
 
 logger.info(f"bincount_re : {bincount_re}")
 logger.info(f"bincount_re_2 : {bincount_re_2}")
 
 # 词频统计数据和分数logits合成元祖tuple
-tuple_vcb_lgt = list(zip(bincount_re,random_sample_sf.tolist()))
-tuple_vcb_lgt_2 = list(zip(bincount_re_2,random_uniform_sf.tolist()))
+tuple_vcb_lgt = list(zip(bincount_re,smpl_rdm_sf.tolist()))
+tuple_vcb_lgt_2 = list(zip(bincount_re_2,unifrm_rdm_sf.tolist()))
 
 # 1 单词 2词频统计 3概率分数
 vac_binc_re = [(verse_vocab[i], ele[0],ele[1]) for i,ele in enumerate(tuple_vcb_lgt)]
@@ -95,9 +98,9 @@ def test_temperature(x_tensor:Tensor,sf_dim=-1,temperature=1.0):
      print(f"x_sf : {x_sf}")
      return x_sf
 
-test_temperature(tensor(random_sample))
-test_temperature(tensor(random_sample),temperature=0.5)
-test_temperature(tensor(random_sample),temperature=2)
+test_temperature(tensor(smpl_rdm))
+test_temperature(tensor(smpl_rdm),temperature=0.5)
+test_temperature(tensor(smpl_rdm),temperature=2)
 
 """ 测试top_k """
 
@@ -108,7 +111,7 @@ group_names =["temperature 0.5","temperature 1","temperature 1.5"]
 
 
 # 概率分布中只抽取排名前top-k的概率,返回一个topk的元祖，封装了数据和index
-random_sample_top4_logits,top4_index = topk(tensor(random_sample),4) 
+random_sample_top4_logits,top4_index = topk(tensor(smpl_rdm),4) 
 # 取topk最小值
 logger.info("----------------------------------取topk最小值----------------------------------------------------")
 logger.info(random_sample_top4_logits.shape)
@@ -116,7 +119,7 @@ topmin = random_sample_top4_logits[-1]
 logger.info(topmin.shape)
 logger.info(topmin)
 # topk最小值以下都赋0
-random_sample = tensor(random_sample)
+random_sample = tensor(smpl_rdm)
 # 满足条件 取值来自 1，tensor(float("-inf")) 不满足条件 取值来自 2random_sample
 random_sample =  where(topmin>random_sample,tensor(float("-inf")).to(random_sample.device),random_sample)
 

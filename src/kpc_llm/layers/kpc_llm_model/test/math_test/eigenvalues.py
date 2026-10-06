@@ -12,7 +12,7 @@ A = np.array([
 
 # 2. 调用专门针对实对称矩阵的 eigh 函数
 # 它会自动完成：求特征值 -> 特征向量正交化 -> 特征向量单位化
-eigenvalues, eigenvectors = np.linalg.eigh(A)
+eigenvalues, eigenvectors = np.linalg.eigh(A) 
 
 print("=== 1. 特征值 ===")
 print(np.round(eigenvalues, 4)) 

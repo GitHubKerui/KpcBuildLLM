@@ -9,6 +9,8 @@ from kpc_llm.data_fetch.textloader import getTxtStr
 from kpc_llm.utils import val_plot
 from kpc_llm.utils.logger import getlogger
 from kpc_llm.utils.val_plot import plot_loss
+from kpc_llm.layers.kpc_llm_model.train_cfg import GPT2_cl100k_base_CNF
+from dataclasses import asdict
 import tiktoken
 import torch
 # from transformers import AutoTokenizer
@@ -18,21 +20,24 @@ import torch
 
 logger = getlogger()
 
+# 配置数据类转字典
+TRAIN_CNF = asdict(GPT2_cl100k_base_CNF)
+
 # 写配置
-TRAIN_CNF = {
-    "vcab_sz" : 100277,
-    "cntext_lnth" : 256,
-    # 最大上下文位置长度，用于生成上下文位置id,必须大于等于上面的最大上下文长度
-    "max_cntxt_pstion_lnth" : 256,
-    "emb_dim" : 512,
-    "heads_num" : 8,
-    "trnsf_blocks_num" : 8,
-    "drop_rt" : 0.1,
-    "qkv_bias" : False,
-    "batch_size":16,
-    # 是返回softmax还是返回logits的argmax最大值的index值,也就是 tokenid
-    "returnSoftmax" : False
-}
+# TRAIN_CNF = {
+#     "vcab_sz" : 100277,
+#     "cntext_lnth" : 256,
+#     # 最大上下文位置长度，用于生成上下文位置id,必须大于等于上面的最大上下文长度
+#     "max_cntxt_pstion_lnth" : 256,
+#     "emb_dim" : 512,
+#     "heads_num" : 8,
+#     "trnsf_blocks_num" : 8,
+#     "drop_rt" : 0.1,
+#     "qkv_bias" : False,
+#     "batch_size":16,
+#     # 是返回softmax还是返回logits的argmax最大值的index值,也就是 tokenid
+#     "returnSoftmax" : False
+# }
 """
 这是英文的语料，效果不错。一轮20mb就语法基本通顺了。 
 """
