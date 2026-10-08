@@ -2,7 +2,6 @@
 
 from torch import nn,Tensor,manual_seed,arange,argmax,softmax
 from kpc_llm.utils.logger import getlogger
-from kpc_llm.layers.kpc_llm_model.kpc_llm_config import KPC_GPT_CONFIG_124M as cnf_kpc
 from kpc_llm.layers.kpc_llm_model.transformer_block.transformer_block import KpcTransformerBlock
 from kpc_llm.layers.kpc_llm_model.kpc_norml import KpcNormal
 

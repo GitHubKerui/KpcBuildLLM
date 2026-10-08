@@ -29,10 +29,19 @@ class MultiHeadAttention(nn.Module):
         self.W_q = nn.Linear(embed_dim,embed_dim,qkv_bias)
         self.W_k = nn.Linear(embed_dim,embed_dim,qkv_bias)
         self.W_v = nn.Linear(embed_dim,embed_dim,qkv_bias)
+        # 多头拼接后的输出投影（GPT-2 里的 out_proj / c_proj）。
+        # 这一层原先被注释掉，导致：
+        #   1) 无法加载官方 GPT-2 权重（checkpoint 里有 trf_blocks.N.att.out_proj.*）
+        #   2) 即便强行加载，各头的输出也只是简单拼接、没有做跨头融合，注意力表达能力受限
+        # 注意：新增该层后，此前自训练保存的 checkpoint 会因缺少 out_proj.* 而无法直接加载。
+        self.out_proj = nn.Linear(embed_dim,embed_dim,qkv_bias)
         # drop out 必须在__init__内部才可以用model.eval()关闭
         self.attn_drop = nn.Dropout(drop_rt)
         # 因果mask上三角全部为True 1,这这里设置保证所有参数只用一个，保证高效。
         triuMask = getTriuTrueMask(context_len)
+        # 显式标注类型，否则静态检查器会把 causal_mask 当成 Module，
+        # 下面 self.causal_mask[:num_token,:num_token] 的切片会报"未定义 __getitem__"
+        self.causal_mask: Tensor
         self.register_buffer("causal_mask",triuMask,persistent=False)
         # self.causal_mask([:context_len,:context_len]) 可以直接在forward中调用
         #输入的维度暂时设置跟输出的 out_d一样，这里是combine 组合多个head的维度，自然是out_d，这里in 和out 都是embed_dim 所有没必要
@@ -103,7 +112,8 @@ class MultiHeadAttention(nn.Module):
         # 如果上下文向量的out_dim和 dim_不一致的时候可以 增加 W_com_multihead线性层，
         # W_com_multihead(in_con_vec_out,out_embed_dim)
         # com_heads_c_vecters =  self.W_com_multihead(con_vector_com)后输出跟 embeding一致的dim
-        return con_vector_com
+        # 把各头拼接结果做一次跨头融合的线性变换（GPT-2 的 out_proj），维度仍为 embed_dim
+        return self.out_proj(con_vector_com)
 
 if __name__ == '__main__':
     manual_seed(517)
