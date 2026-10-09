@@ -35,7 +35,7 @@ def create_dir_under_prj(dir_name: str) -> Path:
     # lgr.info(f"Project root localized at: {PRJ_ROOT_DIR}")
     """创建项目根目录下的文件夹"""
     dir_path = PRJ_ROOT_DIR / dir_name
-    dir_path.mkdir(exist_ok=True)
+    dir_path.mkdir(parents=True,exist_ok=True)
     return dir_path
 
 # 给文件名增加时间戳
