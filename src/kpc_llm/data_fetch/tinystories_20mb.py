@@ -7,8 +7,8 @@ logger = getlogger()
 
 if __name__ == "__main__":
     DATASET_ID = "roneneldan/TinyStories"
-    SAVE_NAME = "tinystories_20mb.txt"
-    FileSize = 20 
+    SAVE_NAME = "tinystories_200mb.txt"
+    FileSize = 200 
     # 命令行参数可能不是合法正整数，解析失败时回退到默认 10 MB
     try:
         download(DATASET_ID,SAVE_NAME,FileSize)

@@ -1,0 +1,4 @@
+[training]
+# accelerate 总保存目录：各任务/模型在其下按子目录分列，互不覆盖。
+# 具体用哪个子目录由代码里的 SAVE_SUBDIR / LOAD_SUBDIR 决定，这里只配总目录。
+accelerate_save_dir = "checkpoints/accelerate_state"
