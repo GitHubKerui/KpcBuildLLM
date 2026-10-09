@@ -77,9 +77,9 @@ def generate_from_best_checkpoint(
 if __name__ == "__main__":
     cnf=asdict(GPT2_cl100k_base_CNF)
     topk_root_dir=str(get_project_root() / "checkpoints" / "topk_safetensors")
-    start_context="Long long ago, there is a girl "
-    generate_len=250
-    tmp=0.7
+    start_context="Long long ago, there is a girl whose name is Alice .She like study very much."
+    generate_len=800
+    tmp=1.2
     topk=5
 
     generate_from_best_checkpoint(cnf,topk_root_dir,start_context,generate_len,tmp,topk)
