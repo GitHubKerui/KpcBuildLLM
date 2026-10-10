@@ -48,6 +48,8 @@ class KpcLLMModel(nn.Module):
     def forward(self,input):
         # 这里可能会有个问题这个 cntext_lnth是给位置嵌入使用的，用来生成输入位置id的，
         # 但是self.pstn_emb = nn.Embedding( cntext_lnth,emb_dim)这个位置的数量是写死的。
+        # 这里根据输入token的序列长度去做 embeding的one-hot计算，得到tokenid对应的embedding
+        # 训练好的模型因为这里的位置编码是绝对位置，不是RoPE旋转位置编码，所以没有扩展性，输入不能超过位置编码的上下文长度。
         btch,cntext_lnth =  input.shape
         # 模型前端token embedding 处理部分
         input_tokens = self.vocab_emb(input)
