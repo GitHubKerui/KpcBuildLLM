@@ -62,9 +62,12 @@ data
 notebooks
 .uploads
 
-#others
+# others
 coach
 .codebuddy
 .pytest_cache
 docs
 tests
+
+# 模型训练参数保存目录
+checkpoints

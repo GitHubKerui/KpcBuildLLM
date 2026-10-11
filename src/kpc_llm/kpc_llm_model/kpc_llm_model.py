@@ -1,0 +1,73 @@
+
+
+from torch import nn,Tensor,manual_seed,arange,argmax,softmax
+from kpc_llm.utils.logger import getlogger
+from kpc_llm.kpc_llm_model.transformer_block.transformer_block import KpcTransformerBlock
+from kpc_llm.kpc_llm_model.kpc_norml import KpcNormal
+
+
+# 50524 比gpt-2的50257 多257个token，
+# 这个是因为50524可以硬件级加速：必须是 64 或 128 的倍数
+# 50524，也是向上填充或扩增后的一个特殊对齐数字。这样做不仅能让预训练速度直接提升 5%~10% 左右，
+# 还能节省一部分无效的显存开销。避免因为不是 64或者128的整数造成计算碎片
+# 下面的配置仅供参考 ，不实际使用。
+# KPC_LLM_CONFIG_124M = {
+#     "vcab_sz" : 50524,
+#     "cntext_lnth" : 1024,
+# 最大上下文位置长度，用于生成上下文位置id,必须大于等于上面的最大上下文长度
+#     "max_cntxt_pstion_lnth" : 8,
+#     "emb_dim" : 768,
+#     "heads_num" : 12,
+#     "trnsf_blocks_num" : 12,
+#     "drop_rt" : 0.1,
+#     "qkv_bias" : False,
+#     # 是返回softmax还是返回logits的argmax最大值的index值,也就是 tokenid
+#     "returnSoftmax" : False
+# }
+
+class KpcLLMModel(nn.Module):
+    def __init__(self,cnf) -> None:
+        super().__init__()
+        vcab_sz = cnf['vcab_sz']
+        emb_dim = cnf['emb_dim']
+        max_cntxt_pstion_lnth = cnf['max_cntxt_pstion_lnth']
+        # transformer_block的层数
+        trnsf_blocks_num = cnf['trnsf_blocks_num']
+        # 是否是有偏的布尔值
+        qkv_bias = cnf['qkv_bias']
+        drop_rt = cnf['drop_rt']
+
+        self.vocab_emb = nn.Embedding(vcab_sz,emb_dim)
+        self.pstn_emb = nn.Embedding( max_cntxt_pstion_lnth,emb_dim)
+        self.drop = nn.Dropout(drop_rt)
+        # 用*把list解包后才行，Sequential必须一个一个的Moudle当参数 
+        self.trnsf_blocks = nn.Sequential(*[KpcTransformerBlock(cnf) for _ in range(trnsf_blocks_num)])
+        self.final_norml = KpcNormal(emb_dim)
+        self.out_liner = nn.Linear(emb_dim,vcab_sz,bias=qkv_bias)
+
+    def forward(self,input):
+        # 这里可能会有个问题这个 cntext_lnth是给位置嵌入使用的，用来生成输入位置id的，
+        # 但是self.pstn_emb = nn.Embedding( cntext_lnth,emb_dim)这个位置的数量是写死的。
+        # 这里根据输入token的序列长度去做 embeding的one-hot计算，得到tokenid对应的embedding
+        # 训练好的模型因为这里的位置编码是绝对位置，不是RoPE旋转位置编码，所以没有扩展性，输入不能超过位置编码的上下文长度。
+        btch,cntext_lnth =  input.shape
+        # 模型前端token embedding 处理部分
+        input_tokens = self.vocab_emb(input)
+        # 模型前端位置编码处理部分 这里的pstn_emb 是位置编码，位置编码的维度和token的维度一样，所以可以直接相加。
+        input_tokens = input_tokens + self.pstn_emb(arange(cntext_lnth,device=input.device))
+        # 这里因为是绝对位置特征嵌入，所以必须dropout，否则位置信息会过拟合，因为绝对位置信息过于死板，
+        # 如果升级成RoPE相对位置编码，则可以去掉。这里先用GPT2的范式采用绝对位置编码。
+        x = self.drop(input_tokens)
+        # 模型transformer block 处理部分
+        x = self.trnsf_blocks(x)
+        # 模型最后段 线性 linear层处理部分
+        x = self.final_norml(x)
+        # 最终返回未经 softmax 处理的 logits
+        logits = self.out_liner(x)
+        # 如果需要可以增加 softmax的处理.
+        # if self.returnSoftmax:
+        #     return softmax(logits,dim=-1)
+        # else:
+        #     return argmax(logits,dim=-1,keepdim=True)
+        # 暂时只返回logits
+        return logits

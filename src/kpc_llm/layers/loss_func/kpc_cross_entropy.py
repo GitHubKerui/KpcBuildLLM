@@ -7,8 +7,8 @@ cross entropy交叉熵损失函数的基本原理：
 """
 from torch import tensor,no_grad,softmax,argmax,index_select,gather,log,mean,exp
 from torch.nn.functional import cross_entropy
-from kpc_llm.layers.kpc_llm_model.kpc_llm_model import KpcLLMModel
-from kpc_llm.layers.kpc_llm_model.pretraining.train_loss_calcu import caluBatchesCrossEnLoss
+from kpc_llm.kpc_llm_model.kpc_llm_model import KpcLLMModel
+from kpc_llm.kpc_llm_model.pretraining.train_loss_calcu import caluBatchesCrossEnLoss
 
 # step 1
 # here we have two batch data,one is training batch with shape [1,2,3]
