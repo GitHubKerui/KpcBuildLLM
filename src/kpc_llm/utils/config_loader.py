@@ -8,7 +8,7 @@ from pathlib import Path
 
 import tomllib
 
-from kpc_llm.utils.prj_dirc_file_tools import get_project_root
+from kpc_llm.utils.file_tools import get_project_root
 
 
 class ConfigLoader:

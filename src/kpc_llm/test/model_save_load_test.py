@@ -5,7 +5,7 @@ from kpc_llm.kpc_llm_model.train_cfg import GPT2_cl100k_base_CNF
 from dataclasses import asdict
 from kpc_llm.utils import getlogger
 from kpc_llm.utils.adaptive_device import get_adaptive_device
-from kpc_llm.utils.prj_dirc_file_tools import create_dir_under_prj,add_flnm_timestamp,get_project_root
+from kpc_llm.utils.file_tools import create_dir_under_prj,add_flnm_timestamp,get_project_root
 import time
 import torch
 

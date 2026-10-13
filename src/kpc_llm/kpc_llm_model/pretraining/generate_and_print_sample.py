@@ -12,7 +12,7 @@ from kpc_llm.kpc_llm_model.kpc_llm_model import KpcLLMModel
 from kpc_llm.kpc_llm_model.pretraining.topk_saver import TopKSaver
 from kpc_llm.kpc_llm_model.train_cfg import GPT2_cl100k_base_CNF
 from kpc_llm.utils.adaptive_device import get_adaptive_device
-from kpc_llm.utils.prj_dirc_file_tools import get_project_root
+from kpc_llm.utils.file_tools import get_project_root
 
 logger = getlogger()
 

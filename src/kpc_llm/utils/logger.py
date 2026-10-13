@@ -1,7 +1,15 @@
+from typing import Any
+
+
+import functools
 import os
 import logging
 from logging.handlers import TimedRotatingFileHandler
 from pathlib import Path
+from importlib.metadata import version
+import time
+
+from numpy import empty
 
 # ====================== 日志配置（企业级标准） ======================
 def getlogger(name="kcp_build_llm"):
@@ -47,6 +55,100 @@ def getlogger(name="kcp_build_llm"):
 # ====================== 全局使用 ======================
 # 初始化一次，全项目通用
 logger = getlogger()
+
+def print_pkgs_version(pkgs=None):
+    """ 打印包的版本信息 
+        pkgs: 包名列表，默认值为None，表示打印所有常用包的版本信息
+    """
+    if pkgs is None:
+        pkgs =["matplotlib",
+            "numpy",
+            "tiktoken",
+            "torch",
+            "tensorflow", # For OpenAI's pretrained weights
+            "pandas" ]
+    for pkg in pkgs:
+        if pkg != "":
+            logger.info(f"{pkg} version : {version(pkg)}")
+
+""" 打印输入输出"""
+def log_fn_io(func):
+    import inspect
+    # 拿到函数的完整信息，签名
+    func_reflect = inspect.signature(func)
+    @functools.wraps(func)
+    def wrapper(*args,**kwargs):
+        logger.info(f"\n===== 🚀 🚀 🚀 开始执行函数: {func.__name__} 🚀 🚀 🚀 =====")
+        print(f"👉 【输入参数】:")
+        try:
+            # 用func签名绑定参数名称和参数值
+            bound_args = func_reflect.bind(*args,**kwargs)
+            # 没输入的默认值也用上
+            bound_args.apply_defaults()
+            for p_name,p_value in bound_args.arguments.items():
+                print(f"\n- 参数 ({str(p_name):<12}) - 参数类型 ({type(p_value).__name__}  -")
+                print(f"\n- 参数值 {str(p_value):<12} -")
+        except Exception as e:
+            # 兜底方案：如果绑定失败（比如传参严重错误），降级打印原始数据
+            if args:   print(f"   - 原始位置参数 (args)   : {args}")
+            if kwargs: print(f"   - 原始关键字参数 (kwargs): {kwargs}")
+            logger.exception(f"f{e}")
+       
+        # 执行原函数
+        re: Any = func(*args,**kwargs)
+
+        # 2. 打印输出和耗时
+        print(f"【输出结果】: {re}👈 ")
+        # 返回的变量的名称或者类型
+        re_name_tp = func_reflect.return_annotation
+        if re_name_tp != inspect.Signature.empty:
+            re_name = re_name_tp.__name__   
+        else:
+            re_name = type(re).__name__
+        print(f"\n- 返回对象 {str(re_name):<12} : -")    
+        print(f"\n- 返回值 {str(re):<12} : -")    
+        print(f"=========================================\n")
+        return re
+    return wrapper
+
+""" 打印耗费时间"""
+def log_fn_cost_time(func):
+    @functools.wraps(func)
+    def wrapper(*args,**kwargs):
+        # 执行原函数
+        start_time = time.time()
+        re: Any = func(*args,**kwargs)
+        end_time = time.time()
+        print(f"\n⏱️ {func.__name__ }【执行耗时】: {(end_time - start_time):.4f} 秒")
+        print(f"=========================================\n")
+        return re
+    return wrapper
+
+def log_model(model):
+    """ 打印model 的大概情况"""
+    # 用一个集合来记录已经打印过的参数类型后缀
+    printed_types = set()
+
+    for name, param in model.named_parameters():
+        # 提取参数的通用类型后缀
+        # 例如: "model.layers.0.self_attn.q_proj.weight" -> "self_attn.q_proj.weight"
+        # 或者简单通过 "." 切分，取最后两段作为类型标识
+        name_parts = name.split(".")
+        param_type = ".".join(name_parts[-2:]) if len(name_parts) >= 2 else name
+
+        if param_type not in printed_types:
+            printed_types.add(param_type)
+            
+            # 打印该类型的代表性参数信息
+            logger.info(
+                f"参数类型: {param_type:<20} | "
+                f"样例全称: {name:<35} | "
+                f"形状: {str(param.shape):<26} | "
+                f"梯度(Requires Grad): {str(bool(param.requires_grad)):<3} | "
+                f"设备: {param.device}"
+            )
+
+
 
 # 使用示例
 if __name__ == '__main__':

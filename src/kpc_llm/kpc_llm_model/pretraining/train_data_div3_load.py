@@ -29,10 +29,6 @@ def divDatas2TraValTes(tokenids:torch.Tensor,batch_size,chunk_len,stride,shuffle
 
     return trainDatasetloader,valDatasetloader,testDatasetloader
 
-# TODO k折交叉处理 暂时不用在这里写。
-def k_fold_cross_process(dataloader):
-    return None
-
 
 # for test
 if __name__ == "__main__":

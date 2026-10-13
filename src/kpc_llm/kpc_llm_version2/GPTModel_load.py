@@ -20,7 +20,7 @@ from kpc_llm.kpc_llm_model.token_process.tokenizer_hub import tiktokenizer2idsUn
 from kpc_llm.kpc_llm_model.train_cfg import TrainConfig, get_gpt2_cnf
 from kpc_llm.utils.adaptive_device import get_adaptive_device
 from kpc_llm.utils.logger import getlogger
-from kpc_llm.utils.prj_dirc_file_tools import getResourceFromUrl
+from kpc_llm.utils.file_tools import getResourceFromUrl
 
 logger = getlogger()
 
@@ -50,38 +50,44 @@ def to_ch04_config(cnf: TrainConfig) -> dict:
     }
 
 
-# file_name = "gpt2-small-124M.pth"
-# file_name = "gpt2-medium-355M.pth"
-file_name = "gpt2-large-774M.pth"
-# file_name = "gpt2-xl-1558M.pth"
+def test_gpt_load():
+    
+    # file_name = "gpt2-small-124M.pth"
+    # file_name = "gpt2-medium-355M.pth"
+    file_name = "gpt2-large-774M.pth"
+    # file_name = "gpt2-xl-1558M.pth"
 
-# 按文件名后缀自动匹配规格，省掉手写规格表的出错可能
-cnf = get_gpt2_cnf(file_name)
-ch04_config = to_ch04_config(cnf)
-logger.info(f"file_name : {file_name} -> {cnf.cnf_name}")
-logger.info(f"ch04_config : {ch04_config}")
+    # 按文件名后缀自动匹配规格，省掉手写规格表的出错可能
+    cnf = get_gpt2_cnf(file_name)
+    ch04_config = to_ch04_config(cnf)
+    logger.info(f"file_name : {file_name} -> {cnf.cnf_name}")
+    logger.info(f"ch04_config : {ch04_config}")
 
-savePthFilepath = getResourceFromUrl(
-    f"https://huggingface.co/rasbt/gpt2-from-scratch-pytorch/resolve/main/{file_name}",
-    str(Path("checkpoints") / "GPT2"),
-)
-logger.info(f"savePthFilepath : {savePthFilepath}")
+    savePthFilepath = getResourceFromUrl(
+        f"https://huggingface.co/rasbt/gpt2-from-scratch-pytorch/resolve/main/{file_name}",
+        str(Path("checkpoints") / "GPT2"),
+    )
+    logger.info(f"savePthFilepath : {savePthFilepath}")
 
-device = get_adaptive_device()
-model = GPTModel(ch04_config)
-# 原书实现的参数命名与 checkpoint 一致，可以直接加载
-state_dict = torch.load(savePthFilepath, map_location=device, weights_only=True)
-model.load_state_dict(state_dict)
-model.to(device)
-model.eval()  # 关闭所有训练用的 dropout，因此 drop_rate 取 0.1 还是 0.0 对推理结果无影响
+    device = get_adaptive_device()
+    model = GPTModel(ch04_config)
+    # 原书实现的参数命名与 checkpoint 一致，可以直接加载
+    state_dict = torch.load(savePthFilepath, map_location=device, weights_only=True)
+    model.load_state_dict(state_dict)
+    model.to(device)
+    model.eval()  # 关闭所有训练用的 dropout，因此 drop_rate 取 0.1 还是 0.0 对推理结果无影响
 
-torch.manual_seed(825)
-tokenizer = tiktoken.get_encoding("gpt2")
-# 输入必须与模型同设备，否则报 "Expected all tensors to be on the same device"
-input_ids = tiktokenizer2idsUnsq("Long long ago, there is a girl ", tokenizer).to(device)
+    torch.manual_seed(825)
+    tokenizer = tiktoken.get_encoding("gpt2")
+    # 输入必须与模型同设备，否则报 "Expected all tensors to be on the same device"
+    input_ids = tiktokenizer2idsUnsq("Long long ago, there is a girl ", tokenizer).to(device)
 
-# 必须用采样：generate_txt_loop 的默认 temperature=0.0 / top_k=0 是纯贪心 argmax，
-# 一旦进入高频词组就会锁死成复读，看起来像模型很笨，实际是解码策略的问题。
-prediction_ids = generate_txt_loop(input_ids, ch04_config["context_length"], model, 150, 0.8, 40)
-logger.info(f"prediction_ids : {prediction_ids}")
-logger.info(f"prediction_txt : {tokenizer2txtsSq(prediction_ids, tokenizer)}")
+    # 必须用采样：generate_txt_loop 的默认 temperature=0.0 / top_k=0 是纯贪心 argmax，
+    # 一旦进入高频词组就会锁死成复读，看起来像模型很笨，实际是解码策略的问题。
+    prediction_ids = generate_txt_loop(input_ids, ch04_config["context_length"], model, 150, 0.8, 40)
+    logger.info(f"prediction_ids : {prediction_ids}")
+    logger.info(f"prediction_txt : {tokenizer2txtsSq(prediction_ids, tokenizer)}")
+
+if "__main__" ==  __name__:
+    test_gpt_load()
+    pass

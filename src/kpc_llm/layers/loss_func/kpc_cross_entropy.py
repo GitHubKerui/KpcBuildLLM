@@ -40,56 +40,96 @@ LLM_CONFIG = {
     "returnSoftmax" : False
 }
 
-model = KpcLLMModel(LLM_CONFIG)
-# 关闭 Dropout 失效（通过所有神经元）；BatchNorm 使用全局累计的均值方差。
-model.eval()
-# 不计算梯度
-with no_grad():
-    prediction_batch = model(train_batch)
+""" 可以替代 cross_entropy """
+def kpc_cross_entropy(logits_batch,target_batch):
+    prediction_batch =logits_batch
+    pred_prob = softmax(prediction_batch,-1)
+    # 实际贪心算法中最高概率预测的tokenid
+    pred_tokenid = argmax(pred_prob,-1)
+    # 目标tokenid预测的真实概率 提取
+    # 获取pred_prob的shape
+    batch_num,token_num,vocab_num = pred_prob.shape
+    # target没有 这个 vocab的分布概率最后一维度，但是他的最后一维的值是对应的需要预测的token的id
+    # 为了最后处理，需要把最后一维度扩展出新维度和pred_prob的shape对齐，这里用unsqueeze增加一个维度。
+    target_batch_unsq = target_batch.unsqueeze(-1) 
+    # 沿最后一维利用收集gather概率
+    pred_target_prob = gather(pred_prob,-1,target_batch_unsq)
+    # 再把最后一个维度去掉
+    pred_target_prob_flat = pred_target_prob.squeeze(-1)
+    # 用对数函数log把这些极小值变成负值，负值的数值相对较大，利于计算。这些负值的绝对值就是困惑度Perplexity的e的指数
+    pred_log = log(pred_target_prob_flat)*-1
+    # 最后计算批次平均困惑度 可以作为loss
+    # pred_log_mean = mean(pred_log,-1)
+    """ 全平均才是真 crossn """
+    pred_log_mean = mean(pred_log)
+    return pred_log_mean
 
-pred_prob = softmax(prediction_batch,-1)
-# 实际贪心算法中最高概率预测的tokenid
-pred_tokenid = argmax(pred_prob,-1)
-# 目标tokenid预测的真实概率 提取
-# 获取pred_prob的shape
-batch_num,token_num,vocab_num = pred_prob.shape
-# target没有 这个 vocab的分布概率最后一维度，但是他的最后一维的值是对应的需要预测的token的id
-# 为了最后处理，需要把最后一维度扩展出新维度和pred_prob的shape对齐，这里用squeeze挤出一个维度。
-target_batch_sq = target_batch.unsqueeze(-1) 
-# 沿最后一维利用收集gather概率
-pred_target_prob = gather(pred_prob,-1,target_batch_sq)
-# 再压平最后一个维度
-pred_target_prob_flat = pred_target_prob.squeeze(-1)
-# 用对数函数log把这些极小值变成负值，负值的数值相对较大，利于计算。这些负值的绝对值就是困惑度Perplexity的e的指数
-pred_log = log(pred_target_prob_flat)*-1
-# 最后计算批次平均困惑度 可以作为loss
-pred_log_mean = mean(pred_log,-1)
-# 直接用 cross_entropy 这里必须使用 [tokenid_num,vocab_num]对[tokenid_num,tokenid]
-pred_log_cross = cross_entropy(pred_prob.flatten(0,1),target_batch.flatten())
 
-perplexity = exp(pred_log_cross)
-# 重新整理回原来的shape
-# pred_perplexity_cross_reshape = pred_perplexity_cross.view(2,3)
-# pred_perplexity_cross_reshape_mean = mean(pred_perplexity_cross_reshape,-1)
+def test():
+    model = KpcLLMModel(LLM_CONFIG)
+    # 关闭 Dropout 失效（通过所有神经元）；BatchNorm 使用全局累计的均值方差。
+    model.eval()
+    # 不计算梯度
+    with no_grad():
+        prediction_batch = model(train_batch)
 
-print(f"---------------------------- ::::::::::::::::::::-----------------------------------")
-print(f"prediction_batch shape : {prediction_batch.shape}")
-print(f"prediction_batch : {prediction_batch}")
-print(f"pred_prob shape : {pred_prob.shape}")
-print(f"pred_prob : {pred_prob}")
-print(f"pred_tokenid shape : {pred_tokenid.shape}")
-print(f"pred_tokenid : {pred_tokenid}")
-print(f"target_batch_sq shape : {target_batch_sq.shape}")
-print(f"target_batch_sq : {target_batch_sq}")
-print(f"pred_target_prob shape : {pred_target_prob.shape}")
-print(f"pred_target_prob : {pred_target_prob}")
-print(f"pred_target_prob_flat shape : {pred_target_prob_flat.shape}")
-print(f"pred_target_prob_flat : {pred_target_prob_flat}")
-print(f"pred_log shape : {pred_log.shape}")
-print(f"pred_log : {pred_log}")
-print(f"pred_log_mean shape : {pred_log_mean.shape}")
-print(f"pred_log_mean : {pred_log_mean}")
-print(f"pred_log_cross shape : {pred_log_cross.shape}")
-print(f"pred_log_cross : {pred_log_cross}")
-print(f"perplexity : {perplexity}")
+    func_loss = kpc_cross_entropy(prediction_batch,target_batch)
 
+    pred_prob = softmax(prediction_batch,-1)
+    # 实际贪心算法中最高概率预测的tokenid
+    pred_tokenid = argmax(pred_prob,-1)
+    # 目标tokenid预测的真实概率 提取
+    # 获取pred_prob的shape
+    batch_num,token_num,vocab_num = pred_prob.shape
+    # target没有 这个 vocab的分布概率最后一维度，但是他的最后一维的值是对应的需要预测的token的id
+    # 为了最后处理，需要把最后一维度扩展出新维度和pred_prob的shape对齐，这里用unsqueeze增加一个维度。
+    target_batch_unsq = target_batch.unsqueeze(-1) 
+    # 沿最后一维利用收集gather概率
+    pred_target_prob = gather(pred_prob,-1,target_batch_unsq)
+    # 再把最后一个维度去掉
+    pred_target_prob_flat = pred_target_prob.squeeze(-1)
+    # 用对数函数log把这些极小值变成负值，负值的数值相对较大，利于计算。这些负值的绝对值就是困惑度Perplexity的e的指数
+    pred_log = log(pred_target_prob_flat)*-1
+    # 最后计算批次平均困惑度 可以作为loss
+    # pred_log_mean = mean(pred_log,-1)
+    """ 全平均才是真 crossn """
+    pred_log_mean = mean(pred_log)
+    # 直接用 cross_entropy 这里必须使用 [tokenid_num,vocab_num]对[tokenid_num,tokenid]
+    pred_log_cross = cross_entropy(prediction_batch.flatten(0,1),target_batch.flatten())
+
+    perplexity = exp(pred_log_cross)
+    # 重新整理回原来的shape
+    # pred_perplexity_cross_reshape = pred_perplexity_cross.view(2,3)
+    # pred_perplexity_cross_reshape_mean = mean(pred_perplexity_cross_reshape,-1)
+
+
+    print(f"---------------------------- ::::::::::::::::::::-----------------------------------")
+    print(f"prediction_batch shape : {prediction_batch.shape}")
+    print(f"prediction_batch : {prediction_batch}")
+    print(f"pred_prob shape : {pred_prob.shape}")
+    print(f"pred_prob : {pred_prob}")
+    print(f"pred_tokenid shape : {pred_tokenid.shape}")
+    print(f"pred_tokenid : {pred_tokenid}")
+    print(f"target_batch_unsq shape : {target_batch_unsq.shape}")
+    print(f"target_batch_unsq : {target_batch_unsq}")
+    print(f"pred_target_prob shape : {pred_target_prob.shape}")
+    print(f"pred_target_prob : {pred_target_prob}")
+    print(f"pred_target_prob_flat shape : {pred_target_prob_flat.shape}")
+    print(f"pred_target_prob_flat : {pred_target_prob_flat}")
+    print(f"pred_log shape : {pred_log.shape}")
+    print(f"pred_log : {pred_log}")
+    print(f"pred_log_mean shape : {pred_log_mean.shape}")
+    print(f"pred_log_mean : {pred_log_mean}")
+    print(f"pred_log_cross shape : {pred_log_cross.shape}")
+    print(f"pred_log_cross : {pred_log_cross}")
+    print(f"func_loss : {func_loss}")
+    print(f"prediction_batch.flatten(0,1) : {prediction_batch.flatten(0,1).shape}")
+    print(f"target_batch.flatten() : {target_batch.flatten().shape}")
+    print(f"prediction_batch : {prediction_batch.shape}")
+    print(f"prediction_batch[:, -1, :] : {prediction_batch[:, -1, :].shape}")
+    print(f"target_batch : {target_batch.shape}")
+    print(f"perplexity : {perplexity}")
+
+if "__main__" ==  __name__:
+    test()
+    pass

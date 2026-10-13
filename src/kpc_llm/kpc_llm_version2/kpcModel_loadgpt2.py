@@ -16,7 +16,7 @@ from kpc_llm.kpc_llm_model.token_process.tokenizer_hub import tiktokenizer2idsUn
 from kpc_llm.kpc_llm_model.train_cfg import get_gpt2_cnf
 from kpc_llm.utils.adaptive_device import get_adaptive_device
 from kpc_llm.utils.logger import getlogger
-from kpc_llm.utils.prj_dirc_file_tools import getResourceFromUrl
+from kpc_llm.utils.file_tools import getResourceFromUrl
 
 logger = getlogger()
 

@@ -5,8 +5,10 @@ from kpc_llm.kpc_llm_model.train_cfg import GPT2_cl100k_base_CNF
 from dataclasses import asdict
 from kpc_llm.utils import getlogger
 from kpc_llm.utils.adaptive_device import get_adaptive_device
-from kpc_llm.utils.prj_dirc_file_tools import create_dir_under_prj,add_flnm_timestamp,get_project_root
+from kpc_llm.utils.file_tools import create_dir_under_prj,add_flnm_timestamp,get_project_root
 import time
+from typing import TypeVar
+
 import torch
 
 logger =getlogger()
@@ -41,7 +43,12 @@ def save_model_optimizer(model:torch.nn.Module,opitmizer:torch.optim.Optimizer,m
 
 
 # 只加载模型返回模型
-def load_model_only(model_path,initial_model:torch.nn.Module):
+# 用 TypeVar 把「传进来什么类型就返回什么类型」表达出来：声明成 -> torch.nn.Module 的话，
+# 调用方拿到的是 nn.Module，再访问 .trf_blocks 这类自定义属性时静态检查只能看到
+# Module.__getattr__ 的返回类型 Tensor | Module，会误报一堆属性不存在。
+# _M = TypeVar("_M", bound=torch.nn.Module)
+
+def load_model_only(model_path,initial_model) :
     device = get_adaptive_device()
     # weights_only=True 时，PyTorch 在底层会直接剥离并禁用 pickle 允许执行任意代码的功能。
     # weights_only=True 必须开这一项，避免执行可能从网上获取的模型初始化阶段里通过pickle嵌入黑客的恶意脚本

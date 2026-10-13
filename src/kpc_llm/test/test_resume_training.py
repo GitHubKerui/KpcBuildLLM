@@ -23,7 +23,7 @@ from kpc_llm.kpc_llm_model.pretraining.resume_training import (
 )
 from kpc_llm.utils.config_loader import ConfigLoader
 from kpc_llm.utils.logger import getlogger
-from kpc_llm.utils.prj_dirc_file_tools import get_project_root
+from kpc_llm.utils.file_tools import get_project_root
 
 logger = getlogger()
 
