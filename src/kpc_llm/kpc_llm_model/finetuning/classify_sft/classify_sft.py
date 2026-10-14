@@ -1,11 +1,8 @@
 
 
 from collections import deque
-
 from llms_from_scratch.ch04 import GPTModel
 from logging import Logger
-
-from kpc_llm.kpc_llm_model import KpcLLMModel
 from kpc_llm.kpc_llm_model.finetuning.classify_sft.cls_sft_loss import multi_batches_loss, multi_batches_random_loss, one_batch_loss
 from kpc_llm.kpc_llm_model.finetuning.classify_sft.prepare_cls_fintuning_model import prepare_finetuning_model
 from kpc_llm.kpc_llm_model.finetuning.classify_sft.load_pre_gpt2 import  load_GPT2_model
@@ -50,6 +47,7 @@ def calc_accuracy_loader(data_loader, model, device, num_batches=None):
 
 
 def evaluate_model(model, train_loader, val_loader, device, eval_iter):
+    """ 如果是训练过程中，这个方法不适用，因为loss 在前向传播时候就有了，不需要二次计算。 """
     model.eval()
     with torch.no_grad():
         train_loss = multi_batches_loss(train_loader, model, device, eval_iter)
@@ -59,12 +57,10 @@ def evaluate_model(model, train_loader, val_loader, device, eval_iter):
 
 def train_classifier_simple(model, train_loader, val_loader, optimizer, device, num_epochs,
                             eval_freq_frac=0.1, eval_data_frac=0.5):
-    # Initialize lists to track losses and examples seen
     
     train_losses, val_losses, train_accs, val_accs = [], [], [], []
     examples_seen, global_step = 0, -1
-    # 保证显示的loss，val 平滑，滑动窗口来计算,窗口的size和val批次一致，val_loss 是直接计算的平均值不需要滑动窗口
-    smooth_loss_win = deque(maxlen=train_loader.batch_size)
+    train_loss_ema = None
     # 评估频率设置计算量的百分比。evl_percent = 1:eval_iter 这里设置10%
     train_batch_num = len(train_loader)
     val_batch_num = len(val_loader)
@@ -103,6 +99,12 @@ def train_classifier_simple(model, train_loader, val_loader, optimizer, device, 
             examples_seen += input_batch.shape[0] # 横坐标的x轴，训练的样本数
             global_step += 1
             batch_step += 1
+            # 保证显示的train_loss val_loss是同一个窗口计算的平滑
+            smooth_loss_win = deque(maxlen=eval_freq)
+            # 必须存成 python train_loss 是 cuda 张量，直接交给 matplotlib 会报
+            smooth_loss_win.append(train_loss.item())
+            # ema 计算的效果似乎 比窗口好而且简单。
+            train_loss_ema = train_loss.item() if train_loss_ema is None else 0.93 * train_loss_ema + 0.07 * train_loss.item()
 
             # 每隔 eval_freq 步评估一次模型,保证最后一个batch 也评估一次
             if batch_step % eval_freq == 0 or batch_step == train_batch_num:
@@ -112,11 +114,19 @@ def train_classifier_simple(model, train_loader, val_loader, optimizer, device, 
                 # val_loss已经做了smooth 所以不需要 collections deque 窗口
                 val_loss = multi_batches_random_loss(val_loader, model, device, eval_iter)
                 model.train() 
-                smooth_loss_win.append(train_loss.detach())
+
+                # 最后一个batch 也计算正确的窗口元素
+                if batch_step == train_batch_num:
+                    remove_win_i = eval_freq - batch_step % eval_freq
+                    last_zero_ls=[0]*remove_win_i
+                    #给win增加0值挤掉多余的几个，保证最后一个batch 也计算正确的窗口元素
+                    smooth_loss_win.extend(last_zero_ls)
+                    # smooth_loss_win.append(last_zero_ls)
+
                 smooth_loss = sum(smooth_loss_win) / len(smooth_loss_win)
-                # 必须存成 python float：smooth_loss 是 cuda 张量，直接交给 matplotlib 会报
-                # "can't convert cuda:0 device type tensor to numpy"
-                train_losses.append(smooth_loss.item())
+                # train_losses.append(smooth_loss)
+
+                train_losses.append(train_loss_ema)
                 val_losses.append(val_loss)
                 print(f"Ep {epoch+1} (Step {global_step:06d}): "
                       f"Train loss {train_loss:.3f}, Val loss {val_loss:.3f}")
@@ -155,33 +165,14 @@ if "__main__" == __name__:
         print("baseline:", multi_batches_loss(train_loader, model, device))
 
     start_time = time.time()
-
     torch.manual_seed(123)
-
     optimizer = torch.optim.AdamW(model.parameters(), lr=5e-5, weight_decay=0.1)
-    
-
-    num_epochs = 7
-
-    # 自检 3：前 10 步 batch loss 必须肉眼可见地下降。
-    # 不降就说明链路有问题（token 位置/梯度方向/设备），与数据比例无关。
-    # 注意这 10 步会真实更新权重，属于训练前的热身，确认无误后可整段注释掉。
+    num_epochs = 5
     model.train()
-    # for i, (ib, tb) in enumerate(train_loader):
-    #     if i >= 10:
-    #         break
-    #     optimizer.zero_grad()
-    #     loss = one_batch_loss(ib, tb, model, device)
-    #     loss.backward()
-    #     optimizer.step()
-    #     scheduler.step() # <--- 每次 backward + step 之后更新一次学习率
-    #     print(f"step {i}: {loss.item():.4f}")
-
     train_losses, val_losses, train_accs, val_accs, examples_seen = train_classifier_simple(
         model, train_loader, val_loader, optimizer, device,
         num_epochs, 0.1, 0.5
     )
-
     end_time = time.time()
     execution_time_minutes = (end_time - start_time) / 60
     print(f"Training completed in {execution_time_minutes:.2f} minutes.")
