@@ -1,4 +1,6 @@
 
+import random
+
 from torch.nn.functional import cross_entropy
 
 from kpc_llm.utils.logger import getlogger
@@ -36,6 +38,7 @@ def one_batch_loss(train_batch,target_batch,model,device):
 
 
 def multi_batches_loss(dataLoader,model,device,batchNum=0):
+    """ 计算多个batch的loss，但是只计算前batchNum个batch的loss，并不随机 """
     # 判断数据是否完整
     if dataLoader is None or  (dataLoader) == 0:
         return float('nan')
@@ -54,5 +57,31 @@ def multi_batches_loss(dataLoader,model,device,batchNum=0):
             total_loss += loss.item()
         else:
             break
+
+    return total_loss / batchNum
+
+def multi_batches_random_loss(dataLoader,model,device,batchNum=0):
+    """ 解决多batch的随机抽取问题，保证评估分布质量 """
+    # 判断数据是否完整
+    if dataLoader is None or  (dataLoader) == 0:
+        return float('nan')
+    elif batchNum is None or batchNum <= 0:
+        # 如果没有指定计算前多少个batch的loss 则算全部的
+        realLen = len(dataLoader)
+        batchNum = len(dataLoader)
+    else:
+        realLen = len(dataLoader)
+        # 如果指定了则取长度和指定数量的最小值。
+        batchNum = min(batchNum,realLen)
+
+    # 随机抽取batchNum个batch索引,set的设置保证target_id是Set，查找哈希类型可以保证大数据的高效  # 
+    target_ids = set(random.sample(range(realLen),batchNum))
+
+    total_loss=0.
+    for i,(train_batch,target_batch) in enumerate(dataLoader):
+        """ 这里的target_id 是Set类型，in 瞬间完成：哈希查找，速度极快！"""
+        if i in target_ids:
+            loss = one_batch_loss(train_batch,target_batch,model,device)
+            total_loss += loss.item()
 
     return total_loss / batchNum

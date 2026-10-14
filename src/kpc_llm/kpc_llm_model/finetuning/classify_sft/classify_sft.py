@@ -1,10 +1,12 @@
 
 
+from collections import deque
+
 from llms_from_scratch.ch04 import GPTModel
 from logging import Logger
 
 from kpc_llm.kpc_llm_model import KpcLLMModel
-from kpc_llm.kpc_llm_model.finetuning.classify_sft.cls_sft_loss import multi_batches_loss, one_batch_loss
+from kpc_llm.kpc_llm_model.finetuning.classify_sft.cls_sft_loss import multi_batches_loss, multi_batches_random_loss, one_batch_loss
 from kpc_llm.kpc_llm_model.finetuning.classify_sft.prepare_cls_fintuning_model import prepare_finetuning_model
 from kpc_llm.kpc_llm_model.finetuning.classify_sft.load_pre_gpt2 import  load_GPT2_model
 from kpc_llm.kpc_llm_model.finetuning.classify_sft.prepare_dataloader import prepare_dataloader
@@ -21,7 +23,7 @@ from transformers import get_cosine_schedule_with_warmup
 tokenizer = tiktoken.get_encoding("gpt2")
 log: Logger =  getlogger()
 
-# 这里设计不好，容易迷糊，应该分成连个方法函数，一个是全批量计算准确度（百分比），一个是部分批次计算专区额度
+# 这里设计不好，容易迷糊，应该分两个方法函数，一个是全批量计算准确度（百分比），一个是部分批次计算专区额度
 def calc_accuracy_loader(data_loader, model, device, num_batches=None):
     model.eval()
     correct_predictions, num_examples = 0, 0
@@ -56,38 +58,71 @@ def evaluate_model(model, train_loader, val_loader, device, eval_iter):
     return train_loss, val_loss
 
 def train_classifier_simple(model, train_loader, val_loader, optimizer, device, num_epochs,
-                            eval_freq, eval_iter):
+                            eval_freq_frac=0.1, eval_data_frac=0.5):
     # Initialize lists to track losses and examples seen
+    
     train_losses, val_losses, train_accs, val_accs = [], [], [], []
     examples_seen, global_step = 0, -1
+    # 保证显示的loss，val 平滑，滑动窗口来计算,窗口的size和val批次一致，val_loss 是直接计算的平均值不需要滑动窗口
+    smooth_loss_win = deque(maxlen=train_loader.batch_size)
+    # 评估频率设置计算量的百分比。evl_percent = 1:eval_iter 这里设置10%
+    train_batch_num = len(train_loader)
+    val_batch_num = len(val_loader)
+    # 保证训练循环中，评估频率至少一次
+    eval_freq = max(1,int(train_batch_num*eval_freq_frac)) 
+    # 评估从评估数据，随机抽取的比例数
+    eval_iter = max(1,int(val_batch_num*eval_data_frac)) 
+    print(f"eval_freq : {eval_freq}")
+    print(f"eval_iter : {eval_iter}")
+    print(f"------------------------------------------------------------")
 
-    # Main training loop
+    # 设置学习率的warmup,cosine Annealing 
+    warmup_steps = int(train_batch_num*0.15)
+    print(f"train_batch_num : {train_batch_num}")
+    print(f"warmup_steps : {warmup_steps}")
+    # 2. 只需要填入两个总步数（按你的数据集实际情况填写）
+    scheduler = get_cosine_schedule_with_warmup(
+        optimizer=optimizer,
+        num_warmup_steps=warmup_steps,      # 预热步数（比如前 100 步 lr 从 0 线性升到 2e-5）
+        num_training_steps=train_batch_num    # 整个训练的总步数（总 batch 数）
+    )
+
     for epoch in range(num_epochs):
-        model.train()  # Set model to training mode
-
+        model.train() 
+        batch_step = 0
         for input_batch, target_batch in train_loader:
-            """ 这一步之前，optimizer必须把model.parameter装进去并制定所在硬件 """
-            optimizer.zero_grad() # Reset loss gradients from previous batch iteration
+            """ 每轮训练前 重置loss梯度为0 """
+            optimizer.zero_grad()
             """ 前向计算 == 算误差 """
-            loss = one_batch_loss(input_batch, target_batch, model, device)
+            train_loss = one_batch_loss(input_batch, target_batch, model, device)
             """ 反向计算 == 算梯度 """
-            loss.backward() # Calculate loss gradients
+            train_loss.backward() # 用loss张量计算梯度，loss是Model计算出来的，包含全部参数信息。
             """ step == 更新参数 为啥不用update 用step，服了torch"""
-            optimizer.step() # Update model weights using loss gradients
-            examples_seen += input_batch.shape[0] # New: track examples instead of tokens
+            optimizer.step() # 优化器更新参数，优化器设置了model的参数，所以这里不用传model
+            scheduler.step() # 用学习率调度器更新学习率
+            examples_seen += input_batch.shape[0] # 横坐标的x轴，训练的样本数
             global_step += 1
+            batch_step += 1
 
-            # Optional evaluation step
-            if global_step % eval_freq == 0:
-                train_loss, val_loss = evaluate_model(
-                    model, train_loader, val_loader, device, eval_iter)
-                train_losses.append(train_loss)
+            # 每隔 eval_freq 步评估一次模型,保证最后一个batch 也评估一次
+            if batch_step % eval_freq == 0 or batch_step == train_batch_num:
+
+                # 获取当前的训练和验证损失
+                model.eval()
+                # val_loss已经做了smooth 所以不需要 collections deque 窗口
+                val_loss = multi_batches_random_loss(val_loader, model, device, eval_iter)
+                model.train() 
+                smooth_loss_win.append(train_loss.detach())
+                smooth_loss = sum(smooth_loss_win) / len(smooth_loss_win)
+                # 必须存成 python float：smooth_loss 是 cuda 张量，直接交给 matplotlib 会报
+                # "can't convert cuda:0 device type tensor to numpy"
+                train_losses.append(smooth_loss.item())
                 val_losses.append(val_loss)
                 print(f"Ep {epoch+1} (Step {global_step:06d}): "
                       f"Train loss {train_loss:.3f}, Val loss {val_loss:.3f}")
 
-        # Calculate accuracy after each epoch
-        train_accuracy = calc_accuracy_loader(train_loader, model, device, num_batches=eval_iter)
+        # 计算指定批量的精确度,train的抽取比例和 val 的比例要一致。所以一个eval_freq，一个 eval_iter
+        train_accuracy = calc_accuracy_loader(train_loader, model, device, num_batches=eval_freq)
         val_accuracy = calc_accuracy_loader(val_loader, model, device, num_batches=eval_iter)
         print(f"Training accuracy: {train_accuracy*100:.2f}% | ", end="")
         print(f"Validation accuracy: {val_accuracy*100:.2f}%")
@@ -124,16 +159,7 @@ if "__main__" == __name__:
     torch.manual_seed(123)
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=5e-5, weight_decay=0.1)
-    batch_num = len(train_loader)
-    warmup_steps = int(batch_num*0.15)
-    print(f"batch_num : {batch_num}")
-    print(f"warmup_steps : {warmup_steps}")
-    # 2. 只需要填入两个总步数（按你的数据集实际情况填写）
-    scheduler = get_cosine_schedule_with_warmup(
-        optimizer=optimizer,
-        num_warmup_steps=warmup_steps,      # 预热步数（比如前 100 步 lr 从 0 线性升到 2e-5）
-        num_training_steps=batch_num    # 整个训练的总步数（总 batch 数）
-    )
+    
 
     num_epochs = 7
 
@@ -141,26 +167,28 @@ if "__main__" == __name__:
     # 不降就说明链路有问题（token 位置/梯度方向/设备），与数据比例无关。
     # 注意这 10 步会真实更新权重，属于训练前的热身，确认无误后可整段注释掉。
     model.train()
-    for i, (ib, tb) in enumerate(train_loader):
-        if i >= 10:
-            break
-        optimizer.zero_grad()
-        loss = one_batch_loss(ib, tb, model, device)
-        loss.backward()
-        optimizer.step()
-        scheduler.step() # <--- 每次 backward + step 之后更新一次学习率
-        print(f"step {i}: {loss.item():.4f}")
+    # for i, (ib, tb) in enumerate(train_loader):
+    #     if i >= 10:
+    #         break
+    #     optimizer.zero_grad()
+    #     loss = one_batch_loss(ib, tb, model, device)
+    #     loss.backward()
+    #     optimizer.step()
+    #     scheduler.step() # <--- 每次 backward + step 之后更新一次学习率
+    #     print(f"step {i}: {loss.item():.4f}")
 
     train_losses, val_losses, train_accs, val_accs, examples_seen = train_classifier_simple(
         model, train_loader, val_loader, optimizer, device,
-        num_epochs=num_epochs, eval_freq=50, eval_iter=5,
+        num_epochs, 0.1, 0.5
     )
 
     end_time = time.time()
     execution_time_minutes = (end_time - start_time) / 60
     print(f"Training completed in {execution_time_minutes:.2f} minutes.")
-    epochs_tensor = torch.linspace(0, num_epochs, len(train_losses))
-    examples_seen_tensor = torch.linspace(0, examples_seen, len(train_losses))
+    # .cpu()：linspace 默认落在当前默认设备上，一旦默认设备是 cuda，
+    # matplotlib 转 numpy 时会报 "can't convert cuda:0 device type tensor to numpy"
+    epochs_tensor = torch.linspace(0, num_epochs, len(train_losses)).cpu()
+    examples_seen_tensor = torch.linspace(0, examples_seen, len(train_losses)).cpu()
 
     plot_values(epochs_tensor, examples_seen_tensor, train_losses, val_losses)
 
