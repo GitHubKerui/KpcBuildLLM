@@ -1,6 +1,7 @@
 
 import random
 
+import torch
 from torch.nn.functional import cross_entropy
 
 from kpc_llm.utils.logger import getlogger
@@ -25,7 +26,9 @@ log =  getlogger()
 def one_batch_loss(train_batch,target_batch,model,device):
     train_batch = train_batch.to(device)
     target_batch = target_batch.to(device)
-    logits_batch = model(train_batch)
+    # 前向计算 用bf16 不用fp32
+    with torch.autocast(device_type=device.type, dtype=torch.bfloat16):
+        logits_batch = model(train_batch)
     """ 分类微调的loss 计算的关键点,只把分类特征放到最后一个token里 """
     """ 因为因果注意力的最后字符是有全部上下文向量的信息的，特征最全, """
     last_token_logit = logits_batch[:,-1,:]

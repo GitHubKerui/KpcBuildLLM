@@ -89,9 +89,10 @@ def train_classifier_simple(model, train_loader, val_loader, optimizer, device, 
         for input_batch, target_batch in train_loader:
             """ 每轮训练前 重置loss梯度为0 """
             optimizer.zero_grad()
-            """ 前向计算 == 算误差 """
-            train_loss = one_batch_loss(input_batch, target_batch, model, device)
-            """ 反向计算 == 算梯度 """
+            """ 前向计算 == 算误差 用bf16，不用fp32 """
+            with torch.autocast(device_type=device.type, dtype=torch.bfloat16):
+                train_loss = one_batch_loss(input_batch, target_batch, model, device)
+            """ 反向计算 == 算梯度 不能用bf16必须在 torch.autocast 外面"""
             train_loss.backward() # 用loss张量计算梯度，loss是Model计算出来的，包含全部参数信息。
             """ step == 更新参数 为啥不用update 用step，服了torch"""
             optimizer.step() # 优化器更新参数，优化器设置了model的参数，所以这里不用传model
