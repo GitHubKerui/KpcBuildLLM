@@ -73,14 +73,14 @@ def train_classifier_simple(model, train_loader, val_loader, optimizer, device, 
     print(f"------------------------------------------------------------")
 
     # 设置学习率的warmup,cosine Annealing 
-    warmup_steps = int(train_batch_num*0.15)
-    print(f"train_batch_num : {train_batch_num}")
-    print(f"warmup_steps : {warmup_steps}")
+    num_training_steps = train_batch_num * num_epochs
+    warmup_steps = int(num_training_steps*0.15)
+    print(f"--- train_batch_num : {train_batch_num} --- warmup_steps : {warmup_steps} ---")
     # 2. 只需要填入两个总步数（按你的数据集实际情况填写）
     scheduler = get_cosine_schedule_with_warmup(
         optimizer=optimizer,
         num_warmup_steps=warmup_steps,      # 预热步数（比如前 100 步 lr 从 0 线性升到 2e-5）
-        num_training_steps=train_batch_num    # 整个训练的总步数（总 batch 数）
+        num_training_steps=num_training_steps    # 整个训练的总步数（总 batch 数）
     )
 
     for epoch in range(num_epochs):
