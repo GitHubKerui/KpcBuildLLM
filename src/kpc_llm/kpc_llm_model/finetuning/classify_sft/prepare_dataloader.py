@@ -90,7 +90,17 @@ def div_df(df:DataFrame):
     # log.info(f"\n test_df : {test_df.size}")
     return train_df,val_df,test_df
 
-def prepara_all_loader(train_df,val_df,test_df,batch_size:int=8,num_worker:int=0):
+""" Windows 上每个 worker 都是独立进程（spawn 启动），各自要加载一遍完整的 torch + CUDA DLL
+（shm.dll / libtorch_cuda.dll，GB 量级）。num_workers 开大很容易把系统提交内存打满，
+先后报过两种错误但根因同一个：
+  1) OSError: [WinError 1455] 页面文件太小 —— worker 启动时映射 shm.dll 直接失败；
+  2) OSError: [Errno 28] No space left on device —— 保存 checkpoint 时内存尖峰撑爆提交量，
+     Windows 把「提交失败」误报成「磁盘满」（当时 K 盘实际还有 92.9GB 空闲）。
+persistent_workers=True 时中途 Ctrl+C 不会回收 worker，跑几轮会攒下一堆孤儿 python.exe 撑爆内存，
+排查前先 taskkill /F /IM python.exe。
+本机 2~4 就够：数据集只有 1045 条、batch=8 共 130 步，瓶颈 100% 在 GPU 前向，不在数据加载。
+调试期可传 0，让数据在主进程加载，最省内存且报错栈最短。 """
+def prepara_all_loader(train_df,val_df,test_df,batch_size:int=8,num_worker:int=2):
         # 保存到 csv 文件
     train_df.to_csv("train.csv", index=False)
     val_df.to_csv("val.csv", index=False)
@@ -100,9 +110,9 @@ def prepara_all_loader(train_df,val_df,test_df,batch_size:int=8,num_worker:int=0
     val_dataset = SpamDataset(csv_file="val.csv",tokenizer=tokenizer,max_length=None)
     test_dataset = SpamDataset(csv_file="test.csv",tokenizer=tokenizer,max_length=None)
 
-    train_loader = DataLoader(train_dataset,batch_size,True,num_workers=num_worker,drop_last=True)
-    val_loader = DataLoader(val_dataset,batch_size,num_workers=num_worker,drop_last=False)
-    test_loader = DataLoader(test_dataset,batch_size,num_workers=num_worker,drop_last=False)
+    train_loader = DataLoader(train_dataset,batch_size,True,num_workers=num_worker,drop_last=True,persistent_workers=True)
+    val_loader = DataLoader(val_dataset,batch_size,num_workers=num_worker,drop_last=False,persistent_workers=True)
+    test_loader = DataLoader(test_dataset,batch_size,num_workers=num_worker,drop_last=False,persistent_workers=True)
     # log.info(f"\n train_loader: {len(train_loader)}")
     # log.info(f"\n val_loader  : {len(val_loader)}")
     # log.info(f"\n test_loader : {len(test_loader)}")

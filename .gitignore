@@ -57,7 +57,7 @@ logs/
 Thumbs.db
 
 # reference document dir
-LLMs-from-scratch-main
+LFS
 data
 notebooks
 .uploads
@@ -71,3 +71,9 @@ tests
 
 # 模型训练参数保存目录
 checkpoints
+lightning_logs
+
+# csv
+test.csv
+train.csv
+val.csv
