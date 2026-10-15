@@ -1,4 +1,5 @@
-from kpc_llm.data_fetch.my_tokenizer import Tokenizer
+
+from kpc_llm.test.algorithm_test.my_tokenizer import Tokenizer
 from kpc_llm.utils.logger import getlogger
 
 logger = getlogger()

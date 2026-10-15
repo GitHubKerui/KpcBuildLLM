@@ -50,7 +50,7 @@ def download_file(url=None, save_path:Path=Path("download"), file_name=None,is_c
                 # 如果文件名空，则用下载文件名
                 file_name = url.split("/")[-1]
                 log.info(f"下载地址 : {url}")
-                log.info(f"下载文件 : {file_name}")
+                log.info(f"准备保存文件 : {file_name}")
                 save_path = save_path / file_name
                 # 如果 文件存在则 不覆盖
                 if save_path.exists() and not is_cover :
