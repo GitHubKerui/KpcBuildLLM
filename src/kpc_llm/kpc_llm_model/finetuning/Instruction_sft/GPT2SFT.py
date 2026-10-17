@@ -27,7 +27,7 @@ from kpc_llm.kpc_llm_model.finetuning.classify_sft.prepare_dataloader import pre
 from kpc_llm.utils.pyplot.plot_values import plot_values
 
 
-class GPT2SpamClassifier(L.LightningModule):
+class GPT2SFT(L.LightningModule):
     """GPT-2 large + 二分类头。
 
     只训练 out_head、最后一个 transformer block 和 final_norm（约 19.7M / 774M 参数），
@@ -273,7 +273,7 @@ def main(smoke: bool = False) -> None:
     print(f"未训练 baseline: val loss {base_loss:.3f}（二分类随机应接近 0.693）, "
           f"val acc {base_acc:.2%}（应接近 50%）")
 
-    lit_model = GPT2SpamClassifier(model)
+    lit_model = GPT2SFT(model)
     checkpoint = ModelCheckpoint(
         dirpath="./checkpoints/lightning",
         filename="gpt2-spam-best-{epoch:02d}-{val_loss:.3f}",

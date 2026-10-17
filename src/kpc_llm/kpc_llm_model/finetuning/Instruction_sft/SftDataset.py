@@ -71,11 +71,11 @@ class SftDataset(Dataset):
                 input_str = self._format_input(data)
                 response_str = self._format_response(data)
                 # prompt 长度必须是【token 数】：len(str) 拿到的是字符数，英文约 1 token ≈ 4 字符，
-                # 直接当 token 下标用会把 -100 屏蔽区间盖到 response 里去
-                prompt_ids = SftDataset.tokenizer.encode(input_str)
                 dataset_fm.append(input_str + response_str)
                 # 分开 encode 再拼接：encode(prompt) + encode(response) 和
                 # encode(prompt + response) 在 BPE 边界上可能差 1~2 个 token
+                # 直接当 token 下标用会把 -100 屏蔽区间盖到 response 里去
+                prompt_ids = SftDataset.tokenizer.encode(input_str)
                 dataset_fm_token.append(prompt_ids + SftDataset.tokenizer.encode(response_str))
                 instraction_lens.append(len(prompt_ids))
             return dataset_fm,instraction_lens,dataset_fm_token

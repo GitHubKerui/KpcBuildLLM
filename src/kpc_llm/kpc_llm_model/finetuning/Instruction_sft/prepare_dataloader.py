@@ -7,7 +7,7 @@ from pandas.core.frame import DataFrame
 import pandas as pd
 import torch
 from kpc_llm.kpc_llm_model.finetuning.classify_sft.SpamDataset import SpamDataset
-from kpc_llm.kpc_llm_model.finetuning.direct_preference_sft.SftDataset import SftDataset
+from kpc_llm.kpc_llm_model.finetuning.Instruction_sft.SftDataset import SftDataset
 from kpc_llm.layers.loss_func.kpc_cross_entropy import target_batch
 from kpc_llm.utils import download_file, getlogger,get_project_root
 import tiktoken
