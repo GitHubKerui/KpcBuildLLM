@@ -36,9 +36,9 @@ def plot_loss(epochs,tokens,train_losses,val_losses):
     plt.show()
 
 
-if "__main__" ==  __name__:
-    epochs = [i for i in range(1,21)]
-    tokens = [i * 5000 for i in range(1, 21)]
-    train_losses = [  2.5 - (i * 0.1) for i in range(1, 21)]
-    val_losses = [2.6 - (i * 0.08) for i in range(1, 21)]
-    plot_loss(epochs,tokens,train_losses,val_losses)
+# if "__main__" ==  __name__:
+#     epochs = [i for i in range(1,21)]
+#     tokens = [i * 5000 for i in range(1, 21)]
+#     train_losses = [  2.5 - (i * 0.1) for i in range(1, 21)]
+#     val_losses = [2.6 - (i * 0.08) for i in range(1, 21)]
+#     plot_loss(epochs,tokens,train_losses,val_losses)

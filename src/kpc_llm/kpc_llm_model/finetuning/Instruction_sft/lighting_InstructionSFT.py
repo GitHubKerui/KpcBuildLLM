@@ -19,7 +19,6 @@ import torch.nn.functional as F
 from transformers import get_cosine_schedule_with_warmup
 
 from kpc_llm.utils import getlogger
-from kpc_llm.utils.val_plot import val_losses
 
 log = getlogger()
 class LightingInstructionSFT(L.LightningModule):
@@ -57,7 +56,7 @@ class LightingInstructionSFT(L.LightningModule):
         # 指令 SFT 要每个位置的 logits，才能逐 token 算 next-token 预测误差。
         return self.model(input_batch)  #输出 [B, T, vocab]
 
-    def _shared_step(self, batch) -> tuple[torch.Tensor, int, int]:
+    def _shared_train_step(self, batch) -> tuple[torch.Tensor, int, int]:
         """返回 (loss, 预测逻辑值, 最后一个token的logits)。"""
         inputs, targets = batch
         """ ***** 这里就是model(inputs) *****  """
@@ -74,9 +73,10 @@ class LightingInstructionSFT(L.LightningModule):
 
         # 准确率只在有效位置上算，pad位置不算，最后的结束endoftoken要保留，学习文章结束
         mask = targets_flat != self.ignore_index
-        preds = logits_flat.argmax(-1)
-        # 把真的true ==1 然后相加来算正确的次数
-        acc = int((preds == targets_flat[mask]).sum())
+        preds = logits_flat.argmax(-1) # 长度 = B*T = 512（所有 token，含 padding/prompt）
+        # 把真的true ==1 然后相加来算正确的次数（preds 也要按 mask 筛，否则长度对不上）
+        acc = int((preds[mask] == targets_flat[mask]).sum()) # targets_flat 长度 = 有效 token 数 = 134（只保留非 -100）
+        # 真正的训练返回元祖
         return loss ,acc,int(mask.sum())
 
     # ================= 训练 =================
@@ -92,23 +92,23 @@ class LightingInstructionSFT(L.LightningModule):
 
     def training_step(self, batch, batch_idx) :
         # 框架自动调用 model.eval()
-        loss,acc,n_tokens = self._shared_step(batch)
+        loss,acc,n_tokens = self._shared_train_step(batch)
         # token 数加权：不同批的有效 token 数不同，直接平均会偏袒短批
         self._trn_loss_sum += loss.item() * n_tokens
         self._trn_acc += acc
         self._trn_tokens += n_tokens
-        log.info(f"--- batchshape : {batch.shape} ---")
         self.example_seen += int(batch[0].shape[0])
         # 第一次调用 train_loss_ema is None 会获得loss，后面获得的都是加权平均。
         # 0.93 换算下来 约等于 15次数据的加权平均。只是约等于
+        # 注意 (1-0.93)=0.07 必须写：漏了的话稳态 ema = loss/0.07，数值被放大 14 倍
         self.train_loss_ema = ( 
             loss.item()
             if self.train_loss_ema is None 
-            else 0.93 * self.train_loss_ema + loss.item())
+            else 0.93 * self.train_loss_ema + 0.07 * loss.item())
         # Lightning 框架进度条 用 self.log
         self.log("train_loss",loss,on_step=True,on_epoch=False,prog_bar=True)
         self.log("train_loss_ema",self.train_loss_ema,on_step=True,on_epoch=False)
-
+        # 这里不需要写 loss.backward,也不用optimizer.step框架会处理
         return loss
     
     def on_train_epoch_end(self) -> None:
@@ -136,7 +136,7 @@ class LightingInstructionSFT(L.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         # 获取验证，loss,acc,n_tokens,lightning 框架自动调用 model.eval()
-        loss,acc,n_tokens = self._shared_step(batch)
+        loss,acc,n_tokens = self._shared_train_step(batch)
         self._val_loss_sum += loss.item() * n_tokens
         self._val_acc += acc
         self._val_tokens += n_tokens
@@ -179,7 +179,7 @@ class LightingInstructionSFT(L.LightningModule):
     # ================= 测试 =================
 
     def test_step(self, batch, batch_idx):
-        loss, acc, n_tokens = self._shared_step(batch)
+        loss, acc, n_tokens = self._shared_train_step(batch)
         self.log("test_loss", loss, on_step=False, on_epoch=True, batch_size=n_tokens)
         self.log(
             "test_token_acc",

@@ -21,6 +21,7 @@ dependencies = [
     "tqdm>=4.70.1",
     "llms-from-scratch>=1.0.18",
     "lightning>=2.6.6",
+    "rich>=15.0.0",
 ]
 
 [project.optional-dependencies]
