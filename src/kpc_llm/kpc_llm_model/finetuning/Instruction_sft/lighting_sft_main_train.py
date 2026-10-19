@@ -3,6 +3,7 @@ import argparse
 from rich.traceback import install
 
 from kpc_llm.kpc_llm_model.finetuning.Instruction_sft.prepare_dataloader import prepare_dataloader
+from kpc_llm.kpc_llm_model.train_cfg import GPT2_MEDIUM_CNF
 install(show_locals=True)
 import time
 from lightning.pytorch.callbacks import ModelCheckpoint
@@ -11,7 +12,7 @@ import torch
 import lightning as L
 from torch.utils.data import dataloader
 from kpc_llm.kpc_llm_model.finetuning.Instruction_sft.lighting_InstructionSFT import LightingInstructionSFT
-from kpc_llm.kpc_llm_model.finetuning.Instruction_sft.load_pre_gpt2_small import load_gpt2_small_model
+from kpc_llm.kpc_llm_model.finetuning.Instruction_sft.load_pre_gpt2_small import load_gpt2_large_model, load_gpt2_model, load_gpt2_small_model
 from kpc_llm.utils.pyplot.plot_values import plot_values
 
 # ===================== 训练前自检（非 Lightning） =====================
@@ -69,15 +70,19 @@ def plot_history(history: dict[str, list[float]], num_epochs: int) -> None:
     )
 
 # ===================== 主流程 =====================
+GPT2_SMALL = "gpt2-small-124M"
+GPT2_MEDIUM = "gpt2-medium-355M"
+GPT2_LARGE = "gpt2-large-774M"
 
 def main(smoke:bool = False,epochs_n:int=1):
-
+    model_name = GPT2_MEDIUM
     L.seed_everything(123)
     # 本机显卡带 Tensor Core，允许 TF32 换性能,这里存储是FP32，lighting后面混合精度会在前向时候自动替换
     torch.set_float32_matmul_precision("high")
 
     # 1) 加载模型 准备数据 初始化训练类 数据和权重基本检查
-    model = load_gpt2_small_model()
+    # model = load_gpt2_small_model()
+    model = load_gpt2_model(model_name + ".pth")
     train_loader, val_loader, test_loader = prepare_dataloader()
     # 用Lightning 初始化model的全部训练类，fit的逻辑都在这个类里。
     lit_model = LightingInstructionSFT(model)
@@ -92,7 +97,7 @@ def main(smoke:bool = False,epochs_n:int=1):
     # 这个太方便了，原生的就这一坨费劲巴拉，频率太高还怕把硬盘搞坏了
     checkpoint = ModelCheckpoint(
         dirpath ="./checkpoints/lightning/instruction",
-        filename="gpt2-small-sft-{epoch:02d}-{val_loss:.3f}",
+        filename= model_name + "-sft-{epoch:02d}-{val_loss:.3f}",
         monitor = "val_loss",
         mode="min",
         save_top_k = 1,
@@ -131,7 +136,7 @@ def main(smoke:bool = False,epochs_n:int=1):
     trainer.test(model=lit_model, dataloaders=test_loader, ckpt_path=checkpoint.best_model_path)
 
     # 5） 画曲线图
-    print(f"lit_model.history : {lit_model.history}")
+    # print(f"lit_model.history : {lit_model.history}")
     plot_history(lit_model.history, n_epochs)
 
 if __name__ == "__main__":
@@ -149,4 +154,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
     # 5. 将解析后的参数传给 main 函数
     # main(smoke=args.smoke, epochs_n=args.epochs_n)
-    main(False,5)
+    main(False,3)
