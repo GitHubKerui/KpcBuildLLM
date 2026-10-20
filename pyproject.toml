@@ -23,6 +23,7 @@ dependencies = [
     "lightning>=2.6.6",
     "rich>=15.0.0",
     "trl>=1.16.0",
+    "peft>=0.21.2",
 ]
 
 [project.optional-dependencies]
