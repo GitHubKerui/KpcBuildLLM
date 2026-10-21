@@ -1,7 +1,6 @@
 
 import itertools
 import pprint
-from torch._C import device
 from functools import partial
 from typing import Any
 import torch
@@ -134,6 +133,7 @@ def yeild_div_dataloader(data):
         
 
 def test():
+    """ dict_keys(['prompt', 'chosen', 'rejected', 'rejected_mask', 'chosen_mask']) """
     data = load_data(data_path)
     # # pprint.pp(data[:2])
     # example_dataset = PreferDataset(data)
@@ -151,11 +151,18 @@ def test():
     # print("first_batch shape:", first_batch["chosen"].shape)
     print("Train loader:")
     train_dataloader,test_dataloader,val_dataloader = yeild_div_dataloader(data)
-    for batch in train_dataloader:
-        print(
-            batch["chosen"].shape,
-            batch["rejected"].shape,
-        )
+    first_batch = next(iter(train_dataloader))
+    print(first_batch.keys())
+    print(f"\nchosen :\n{decode_tokens_from_batch(first_batch["chosen"][0],tokenizer=tokenizer)}")
+    print(f"\nchosen_mask :\n{first_batch["chosen_mask"][0]}")
+    # 先按 mask 筛出 response 段的 token id，再 decode；对 decode 后的字符串取下标是错的
+    print(f"\nchosen masked :\n{decode_tokens_from_batch(first_batch["chosen"][0][first_batch["chosen_mask"][0]],tokenizer=tokenizer)}")
+
+    # for batch in train_dataloader:
+    #     print(
+    #         batch["chosen"].shape,
+    #         batch["rejected"].shape,
+    #     )
    
 
 if "__main__" == __name__:
