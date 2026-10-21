@@ -99,7 +99,8 @@ def dataloader_slice(data):
         text = decode_tokens_from_batch(token_ids=batch["rejected"][0],tokenizer=tokenizer)
         print(f"re idx:{idx}--------------------------------\n\n{text}")
 
-def yeild_div_dataloader(data):
+def yeild_div_dataloader():
+    data = load_data(data_path)
     num_workers = 0
     batch_size = 8
     data = load_data(data_path)

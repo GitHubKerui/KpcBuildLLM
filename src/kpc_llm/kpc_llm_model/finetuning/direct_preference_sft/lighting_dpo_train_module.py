@@ -1,14 +1,14 @@
-"""GPT-2 small 指令 SFT 的 Lightning 实现。
+"""DPO（Direct Preference Optimization）的 Lightning 实现。
 
-数据契约（来自 prepare_dataloader.custom_collate_fn）：
-    inputs  [B, T] int64   已左移一位的输入
-    targets [B, T] int64   prompt 段 / padding 段为 -100，仅 response 段为有效 token
+数据契约（来自 dpo_data_loader.collate_fn）：
+    batch 是 dict：
+        chosen / rejected        [B, T] int64  完整 token 序列（prompt + response），已 padding
+        chosen_mask / rejected_mask [B, T] bool  True 表示 response 段（prompt 与 padding 为 False）
 
-与参考实现 classify_sft/GPT2SFT.py 的差异（只这四处）：
-    forward  : 返回整段 logits [B,T,V]      （参考实现取 [:, -1, :]）
-    loss     : 展平 + ignore_index=-100     （参考实现是类别交叉熵）
-    指标     : token 准确率 + perplexity    （参考实现是类别准确率）
-    模型     : 保持 out_head(50257)、全参数可训练（参考实现换成 Linear(1280,2) 并冻结主干）
+DPO 与 SFT 的三个关键差异：
+    1. 两个模型：self.model 是 policy（训练），self.ref_model 是 reference（冻结、永远 eval）
+    2. 两路前向：chosen 和 rejected 各算一次，拿的是「序列 logprob」而不是逐 token 均值
+    3. next-token 对齐：位置 t 的 logits 预测 t+1 的 token，logits 丢最后一列、targets 和 mask 丢第一列
 """
 
 from typing import Any
@@ -18,22 +18,29 @@ import torch
 import torch.nn.functional as F
 from transformers import get_cosine_schedule_with_warmup
 
-from kpc_llm.div_logic.DirectPreferenceOptimize import logits_ref
 from kpc_llm.kpc_llm_model.finetuning.direct_preference_sft.compute_dpo_loss import compute_dpo_loss
 from kpc_llm.utils import getlogger
 
 log = getlogger()
+
+
 class LightingInstructionSFT(L.LightningModule):
-    """ GPT-2 small 124M 指令 SFT：只对 response 段算 loss。其他地方-100 padding使梯度为0，不算 loss。"""
+    """DPO：冻结 reference，只训练 policy，拉大 chosen 与 rejected 的 logprob 差。"""
 
-    hparams: Any # save_hyperparameters 动态注入，声明供类型检查使用
+    hparams: Any  # save_hyperparameters 动态注入，声明供类型检查使用
 
-    def __init__(self,model,ref_model,lr:float=5e-5,weight_decay:float=0.1,warmup_frac:float=0.15,ignore_index=-100):
+    def __init__(self, model, ref_model, lr: float = 5e-5, weight_decay: float = 0.1,
+                 warmup_frac: float = 0.15, beta: float = 0.1, ignore_index: int = -100):
         super().__init__()
-        self.save_hyperparameters(ignore=["model"]) # self.hparams只存超参，不存 124M 权重，就是存在类头生命的那个hparams
-        self.model = model # policy model
-        self.ref_model = ref_model
+        self.save_hyperparameters(ignore=["model", "ref_model"])
+        self.model = model          # policy model，要训练
+        self.ref_model = ref_model  # reference model，只读
+        # 注意必须用 requires_grad_()：给 nn.Module 赋 requires_grad=False 只是加了个普通属性，
+        # 内部参数仍然是 True，ref 会被一起训练。
+        self.ref_model.requires_grad_(False)
+        self.ref_model.eval()
         self.ignore_index = ignore_index
+        self.beta = beta
 
         # 单批 loss 抖动大，用 EMA 平滑，比滑动窗口简单且曲线更稳
         self.train_loss_ema: float | None = None
@@ -42,12 +49,11 @@ class LightingInstructionSFT(L.LightningModule):
         # 指标只在一个地方记录最不容易出错。
         self.history: dict[str, list[float]] = {
             "train_loss": [],
-            "train_chosen_acc": [],
-            "train_rejected_acc": [],
+            "train_pref_acc": [],    # DPO 主指标：policy 认为 chosen 优于 rejected 的比例
+            "train_token_acc": [],   # 仅参考：next-token 命中率，DPO 并不优化它，通常会下降
             "val_loss": [],
-            "val_ppl": [],# 参考实现是 perplexity 困惑度可有可无啊
-            "val_chosen_acc": [],
-            "val_rejected_acc": [],
+            "val_pref_acc": [],
+            "val_token_acc": [],
             "examples": [],
         }
         # 样本训练数等于batch_size的和
@@ -59,92 +65,104 @@ class LightingInstructionSFT(L.LightningModule):
 
     def forward(self, input_batch: torch.Tensor) -> torch.Tensor:
         # 这里是self(input_batch)的入口，跟原生的不一样
-        return self.model(input_batch)  #输出 [B, T, vocab]
+        return self.model(input_batch)  # 输出 [B, T, vocab]
 
+    def train(self, mode: bool = True):
+        """ 为了保证 refer model 被定死处于eval() """
+        super().train(mode)
+        self.ref_model.eval()  # 永远钉死
+        return self
 
-    def _dpo_two_shared_step(self, inputs, targets,mask) :
-        """dpo 计算chosen 和 rejected的两个loss通用的方法 ， 这里的"""
-        """dict_keys(['prompt', 'chosen', 'rejected', 'rejected_mask', 'chosen_mask'])"""
-        logits_policy = self(inputs)                 # [B, T, V]
-        logits_ref = self.ref_model(inputs) 
-        vocab = logits_policy.size(-1)
+    def _seq_logps(self, logits, targets, mask):
+        """[B,T,V] + [B,T] + [B,T] → [B]：response 段的序列 logprob（DPO 要的就是这个）。
 
-        # 必须把 [B, T, V] 展平成 [B*T, V]、target 展平成 [B*T]：
-        # cross_entropy 只接受 (N, C) 与 (N,)，维度不对会报 "Expected target size"。
-        logits_p_flat = logits_policy.reshape(-1, vocab)
-        logits_r_flat = logits_ref.reshape(-1, vocab)
-        targets_flat = targets.reshape(-1) 
-        
-        # ignore_index=-100：prompt 段与 padding 段不产生梯度，这是指令 SFT 的核心。
-        loss_policy = F.cross_entropy(logits_p_flat,targets_flat,ignore_index=self.ignore_index)
-        loss_ref = F.cross_entropy(logits_r_flat,targets_flat,ignore_index=self.ignore_index)
+        next-token：位置 t 的 logits 预测 t+1 的 token，所以 logits 丢最后一列，
+        targets 和 mask 丢第一列，三者必须同步移动，否则整体错位一个 token。
+        """
+        logp = F.log_softmax(logits[:, :-1].float(), dim=-1)   # [B,T-1,V]
+        tgt = targets[:, 1:].clamp(min=0).unsqueeze(-1)        # [B,T-1,1]
+        m = mask[:, 1:]                                        # [B,T-1]
+        token_logp = logp.gather(-1, tgt).squeeze(-1)          # [B,T-1]
+        return (token_logp * m).sum(-1)                        # [B]
 
-        # 准确率只在有效位置上算：先按 mask 取行再 argmax，只对 N 个有效 token 做归约
-        targets_valid = targets_flat[mask]                      # [N]
-        acc_policy = int((logits_p_flat[mask].argmax(-1) == targets_valid).sum())
-        acc_ref = int((logits_r_flat[mask].argmax(-1) == targets_valid).sum())
-        # 真正的训练返回元祖
-        return loss_policy,loss_ref,acc_policy,acc_ref,int(mask.sum())
+    def _dpo_two_shared_step(self, inputs, mask):
+        """policy / reference 各算一次序列 logprob，外加 token 准确率（仅作参考指标）"""
+        logits_policy = self(inputs)             # [B,T,V]
+        logits_ref = self.ref_model(inputs)      # [B,T,V]
 
+        logp_policy = self._seq_logps(logits_policy, inputs, mask)  # [B]
+        logp_ref = self._seq_logps(logits_ref, inputs, mask)        # [B]
 
-    def _shared_train_step_dpo(self, batch) :
-        """batch dict_keys(['prompt', 'chosen', 'rejected', 'rejected_mask', 'chosen_mask'])"""
-        inputs_c = batch["chosen"][0]
-        mask_c = batch["chosen_mask"][0]
-        targets_c = batch["chosen"][0][mask_c]
-        loss_policy_ch,loss_ref_ch,acc_p_ch,acc_ref_ch, n_token_ch = self._dpo_two_shared_step(inputs_c,targets_c,mask_c)
+        with torch.no_grad():
+            m = mask[:, 1:]
+            tgt = inputs[:, 1:]
+            pred_p = logits_policy[:, :-1].argmax(-1)[m]
+            pred_r = logits_ref[:, :-1].argmax(-1)[m]
+            acc_policy = int((pred_p == tgt[m]).sum())
+            acc_ref = int((pred_r == tgt[m]).sum())
 
-        inputs_r = batch["rejected"][0]
-        mask_r = batch["rejected_mask"][0]
-        targets_r = batch["rejected"][0][mask_r]
-        loss_policy_rej,loss_ref_rej,acc_p_rej,acc_ref_rej, n_token_rej = self._dpo_two_shared_step(inputs_r,targets_r,mask_r)
+        return logp_policy, logp_ref, acc_policy, acc_ref, int(m.sum())
 
-        b=1
-        loss = compute_dpo_loss(loss_policy_ch, loss_policy_rej, loss_ref_ch, loss_ref_rej, b)
-        # 真正的训练返回元祖
-        return loss,acc_p_ch,acc_p_rej,n_token_ch
+    def _shared_train_step_dpo(self, batch):
+        """chosen / rejected 各算一次，再拼成 DPO loss。
 
+        返回 (loss, 偏好命中数, token 命中数, 有效 token 数)。
+        偏好命中 = policy 给 chosen 的 logprob 高于 rejected 的样本数，这才是 DPO 在优化的东西。
+        """
+        c_logp_p, c_logp_r, acc_p_ch, _acc_r_ch, n_c = self._dpo_two_shared_step(
+            batch["chosen"], batch["chosen_mask"]
+        )
+        r_logp_p, r_logp_r, acc_p_rej, _acc_r_rej, n_r = self._dpo_two_shared_step(
+            batch["rejected"], batch["rejected_mask"]
+        )
+
+        # compute_dpo_loss 吃的是 NLL=-logp，所以这里取负号
+        loss = compute_dpo_loss(-c_logp_p, -r_logp_p, -c_logp_r, -r_logp_r, self.beta)
+        pref_hit = int((c_logp_p > r_logp_p).sum())
+        return loss, pref_hit, acc_p_ch + acc_p_rej, n_c + n_r
 
     # ================= 训练 =================
-    
+
     def _reset_train_stats(self):
         # 重置训练统计数据
         self._trn_loss_sum = 0.0
-        self._trn_rejected_acc = 0 #增大 都只能是 policy 模型的
-        self._trn_chosen_acc = 0  #减小 都只能是 policy 模型的
-        self._trn_tokens  = 0 
+        self._trn_samples = 0       # 样本数：DPO loss 是 per-sample 均值，加权用它
+        self._trn_pref = 0          # 偏好命中数（样本级），DPO 的主指标
+        self._trn_acc = 0           # token 命中数（仅参考）
+        self._trn_tokens = 0        # 有效 token 数，给 token acc 做分母
 
     def on_train_epoch_start(self) -> None:
         self._reset_train_stats()
 
-    def training_step(self, batch, batch_idx) :
-        # 框架自动调用 model.eval()
-        loss,acc_p_ch,acc_p_rej,n_tokens = self._shared_train_step_dpo(batch)
-        # token 数加权：不同批的有效 token 数不同，直接平均会偏袒短批
-        self._trn_loss_sum += loss.item() * n_tokens
-        self._trn_chosen_acc += acc_p_ch
-        self._trn_rejected_acc += acc_p_rej
+    def training_step(self, batch, batch_idx):
+        loss, pref_hit, acc_hit, n_tokens = self._shared_train_step_dpo(batch)
+        batch_size = int(batch["chosen"].shape[0])
+        # DPO loss 是 per-sample 的均值，按样本数加权；乘 token 数会把长 response 的批次过度放大
+        self._trn_loss_sum += loss.item() * batch_size
+        self._trn_samples += batch_size
+        self._trn_pref += pref_hit
+        self._trn_acc += acc_hit
         self._trn_tokens += n_tokens
-        self.example_seen += int(batch[0].shape[0])
+        self.example_seen += batch_size
         # 第一次调用 train_loss_ema is None 会获得loss，后面获得的都是加权平均。
         # 0.93 换算下来 约等于 15次数据的加权平均。只是约等于
         # 注意 (1-0.93)=0.07 必须写：漏了的话稳态 ema = loss/0.07，数值被放大 14 倍
-        self.train_loss_ema = ( 
+        self.train_loss_ema = (
             loss.item()
-            if self.train_loss_ema is None 
+            if self.train_loss_ema is None
             else 0.93 * self.train_loss_ema + 0.07 * loss.item())
         # Lightning 框架进度条 用 self.log
-        self.log("train_loss",loss,on_step=True,on_epoch=False,prog_bar=True)
-        self.log("train_loss_ema",self.train_loss_ema,on_step=True,on_epoch=False)
+        self.log("train_loss", loss, on_step=True, on_epoch=False, prog_bar=True)
+        self.log("train_loss_ema", self.train_loss_ema, on_step=True, on_epoch=False)
         # 这里不需要写 loss.backward,也不用optimizer.step框架会处理
         return loss
-    
+
     def on_train_epoch_end(self) -> None:
-        if self._trn_tokens == 0:
+        if self._trn_samples == 0:
             return
         self.log(
-            "train_token_loss_epoch",
-            self._trn_loss_sum / self._trn_tokens,
+            "train_loss_epoch",
+            self._trn_loss_sum / self._trn_samples,
             on_step=False,
             on_epoch=True,
             prog_bar=True,
@@ -154,8 +172,9 @@ class LightingInstructionSFT(L.LightningModule):
 
     def _reset_val_stats(self):
         self._val_loss_sum = 0.0
-        self._val_rejected_acc = 0 #增大 都只能是 policy 模型的
-        self._val_chosen_acc = 0  #减小 都只能是 policy 模型的
+        self._val_samples = 0
+        self._val_pref = 0
+        self._val_acc = 0
         self._val_tokens = 0
 
     def on_validation_epoch_start(self) -> None:
@@ -165,79 +184,65 @@ class LightingInstructionSFT(L.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         # 获取验证，loss,acc,n_tokens,lightning 框架自动调用 model.eval()
-        loss,acc_p_ch,acc_p_rej,n_tokens = self._shared_train_step_dpo(batch)
-        self._val_loss_sum += loss.item() * n_tokens
-        self._val_chosen_acc += acc_p_ch
-        self._val_rejected_acc += acc_p_rej
+        loss, pref_hit, acc_hit, n_tokens = self._shared_train_step_dpo(batch)
+        batch_size = int(batch["chosen"].shape[0])
+        self._val_loss_sum += loss.item() * batch_size
+        self._val_samples += batch_size
+        self._val_pref += pref_hit
+        self._val_acc += acc_hit
         self._val_tokens += n_tokens
         return loss
 
     def on_validation_epoch_end(self) -> None:
         # 训练前的sanity check 的bool标志 ，如果是这个阶段则不进指标历史统计数据， (训练前会试跑默认2个批次来验证整体正常度)
-        if self.trainer.sanity_checking:     
+        if self.trainer.sanity_checking:
             return
         # 如果验证集为空，则不记录
-        if self._val_tokens == 0 or self.train_loss_ema is None: 
+        if self._val_samples == 0 or self.train_loss_ema is None:
             return
-        # 先算均值再算困惑度：val_ppl 依赖 val_loss
-        val_loss = self._val_loss_sum / self._val_tokens
-        val_chosen_acc = self._val_chosen_acc / self._val_tokens
-        val_rejected_acc = self._val_rejected_acc / self._val_tokens
-        val_ppl = float(torch.exp(torch.tensor(val_loss)))
+        val_loss = self._val_loss_sum / self._val_samples
+        val_pref_acc = self._val_pref / max(self._val_samples, 1)    # 主指标：chosen 压过 rejected 的比例
+        val_token_acc = self._val_acc / max(self._val_tokens, 1)     # 参考指标：next-token 命中率
         # 记录指标历史
         self.history["train_loss"].append(self.train_loss_ema)
-        # 训练集的token准确率,max函数防止分母为0
-        self.history["train_chosen_acc"].append(
-            self._trn_chosen_acc / max(self._trn_tokens, 1)
-        )
-        self.history["train_token_acc"].append(
-            self._trn_rejected_acc / max(self._trn_tokens, 1)
-        )
+        self.history["train_pref_acc"].append(self._trn_pref / max(self._trn_samples, 1))
+        self.history["train_token_acc"].append(self._trn_acc / max(self._trn_tokens, 1))
         self.history["val_loss"].append(val_loss)
-        self.history["val_ppl"].append(val_ppl)
-        self.history["val_chosen_acc"].append(val_chosen_acc)
-        self.history["val_rejected_acc"].append(val_rejected_acc)
+        self.history["val_pref_acc"].append(val_pref_acc)
+        self.history["val_token_acc"].append(val_token_acc)
         self.history["examples"].append(self.example_seen)
         # 记录并显示指标
-        """ 
-        self.log_dict(
-            {"val_loss": val_loss, "val_ppl": val_ppl, "val_token_acc": val_acc},
-            on_step=False,
-            on_epoch=True,
-            prog_bar=True,
-        )
-        """
-        self.log("val_loss",val_loss,on_step=False,on_epoch=True,prog_bar=True)
-        self.log("val_ppl",val_ppl,on_step=False,on_epoch=True,prog_bar=True)
-        self.log("val_chosen_acc",val_chosen_acc,on_step=False,on_epoch=True,prog_bar=True)
-        self.log("val_rejected_acc",val_rejected_acc,on_step=False,on_epoch=True,prog_bar=True)
+        self.log("val_loss", val_loss, on_step=False, on_epoch=True, prog_bar=True)
+        self.log("val_pref_acc", val_pref_acc, on_step=False, on_epoch=True, prog_bar=True)
+        self.log("val_token_acc", val_token_acc, on_step=False, on_epoch=True, prog_bar=True)
 
     # ================= 测试 =================
 
     def test_step(self, batch, batch_idx):
-        loss,acc_p_ch,acc_p_rej,n_tokens = self._shared_train_step_dpo(batch)
-        # loss, acc, n_tokens = self._shared_train_step(batch)
-        self.log("test_loss", loss, on_step=False, on_epoch=True, batch_size=n_tokens)
+        loss, pref_hit, acc_hit, n_tokens = self._shared_train_step_dpo(batch)
+        batch_size = int(batch["chosen"].shape[0])
+        self.log("test_loss", loss, on_step=False, on_epoch=True, batch_size=batch_size)
         self.log(
-            "test_chosen_acc",
-            acc_p_ch / max(n_tokens, 1),
+            "test_pref_acc",
+            pref_hit / max(batch_size, 1),
             on_step=False,
             on_epoch=True,
-            batch_size=n_tokens,
+            batch_size=batch_size,
         )
         self.log(
-            "test_rejected_acc",
-            acc_p_rej / max(n_tokens, 1),
+            "test_token_acc",
+            acc_hit / max(n_tokens, 1),
             on_step=False,
             on_epoch=True,
-            batch_size=n_tokens,
+            batch_size=batch_size,
         )
         return loss
 
     # ================= 优化器与学习率 =================
-    def configure_optimizers(self) :
+
+    def configure_optimizers(self):
         optimizer = torch.optim.AdamW(
-            self.model.parameters(),
+            self.model.parameters(),   # 只传 policy，ref 绝不能进优化器
             lr=self.hparams.lr,
             weight_decay=self.hparams.weight_decay,
         )

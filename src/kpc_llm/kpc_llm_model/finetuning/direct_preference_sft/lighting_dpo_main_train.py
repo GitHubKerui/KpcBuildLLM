@@ -2,55 +2,52 @@ import argparse
 
 from rich.traceback import install
 
-from kpc_llm.kpc_llm_model.finetuning.Instruction_sft.prepare_dataloader import prepare_dataloader
 install(show_locals=True)
 import time
 from lightning.pytorch.callbacks import ModelCheckpoint
-from sympy import fraction
 import torch
 import lightning as L
-from torch.utils.data import dataloader
-from kpc_llm.kpc_llm_model.finetuning.Instruction_sft.lighting_InstructionSFT import LightingInstructionSFT
-from kpc_llm.kpc_llm_model.finetuning.Instruction_sft.load_pre_gpt2_small import load_gpt2_model, load_gpt2_small_model
+from kpc_llm.kpc_llm_model.finetuning.Instruction_sft.load_pre_gpt2_small import load_sft_model
 from kpc_llm.utils.pyplot.plot_values import plot_values
+from kpc_llm.kpc_llm_model.finetuning.direct_preference_sft.lighting_dpo_train_module import LightingInstructionSFT
+from kpc_llm.kpc_llm_model.finetuning.direct_preference_sft.dpo_data_loader import yeild_div_dataloader
 
 # ===================== 训练前自检（非 Lightning） =====================
 
 
 def check_loader(**loaders):
-    """数据自检 1：形状、屏蔽比例、标签范围。
-    有效标签占比必须明显小于 100%，否则说明 prompt 没被屏蔽、会泄漏标签。
+    """数据自检 1：形状、mask 比例、token id 范围。
+    response 占比必须明显小于 100%，否则说明 prompt 没被 mask。
     """
-    for name,loader in loaders.items():
-        inputs,targets = next(iter(loader))
-        valid = int((targets != -100).sum())
-        total = targets.numel()
-        # 有效字符比例必须小于1 否则灭有屏蔽
-        fraction = valid / total
+    for name, loader in loaders.items():
+        batch = next(iter(loader))
+        chosen = batch["chosen"]
+        mask = batch["chosen_mask"]
         print(
-            f"{name:5s} inputs {inputs.shape} targets {targets.shape}"
-            f"有效标签比例: {fraction:.2%}"
-            f"target标签 max_id = {targets.max()}  (应 <= 50257) "
+            f"{name:5s} chosen {tuple(chosen.shape)} rejected {tuple(batch['rejected'].shape)}"
+            f"  response占比 {int(mask.sum()) / mask.numel():.2%}"
+            f"  max_id = {int(chosen.max())} (应 <= 50256)"
         )
 
 def check_model(lit_model:LightingInstructionSFT,loader,max_batches: int = 10):
-    """模型权重自检 2：未训练时验证集 loss。
-    预训练权重正常时应落在 2~5(-ln(1/e^2 ~ 1/e^5)；若 ≈ -ln(1/50257)≈10.8，说明权重没加载成功。
-    这里的loss 也是困惑度的e的指数。正常是约等于 8~250个左右的字符选择范围
+    """模型权重自检 2：未训练时的 DPO loss。
+
+    policy 与 reference 权重相同时两者 logprob 完全相等，logit=0，loss 必然 = ln2 ≈ 0.693。
+    偏离这个数就说明 logprob 口径（shift / mask / 符号）有问题。
     """
-    # lighting_model.parameters()第一个元素是生成器，第二个才是第一个参数（张量）
     device = next(lit_model.parameters()).device
-    loss_sum, tokens = 0.0, 0
+    loss_sum, n = 0.0, 0
     for i, batch in enumerate(loader):
         if i >= max_batches:
             break
-        batch = (batch[0].to(device), batch[1].to(device))
-        loss, _acc, n_tokens = lit_model._shared_train_step(batch)
-        loss_sum += loss.item() * n_tokens
-        tokens += n_tokens
+        # collate 把数据放在 GPU，但 fit 之前 LightningModule 可能还在 CPU，这里统一到模型所在设备。
+        # prompt 在 collate 里没有被 stack，仍是 list（DPO 也用不到），所以只搬 tensor。
+        batch = {k: (v.to(device) if torch.is_tensor(v) else v) for k, v in batch.items()}
+        loss, _pref_hit, _acc_hit, _n_tokens = lit_model._shared_train_step_dpo(batch)
+        loss_sum += loss.item()
+        n += 1
     lit_model.train()
-    loss = loss_sum / max(tokens, 1)
-    return loss
+    return loss_sum / max(n, 1)
 
 def plot_history(history: dict[str, list[float]], num_epochs: int) -> None:
     """把历史画成 loss / token 准确率两条曲线（plot_values 内部会 savefig + show）。"""
@@ -64,8 +61,9 @@ def plot_history(history: dict[str, list[float]], num_epochs: int) -> None:
     epochs = torch.linspace(0, num_epochs, n).cpu()
     examples = torch.linspace(0, examples_seen, n).cpu()
     plot_values(epochs, examples, history["train_loss"], history["val_loss"], label="loss")
+    # DPO 看偏好准确率；token-acc 是 MLE 指标，DPO 下通常会下降（likelihood displacement）
     plot_values(
-        epochs, examples, history["train_token_acc"], history["val_token_acc"], label="token-acc"
+        epochs, examples, history["train_pref_acc"], history["val_pref_acc"], label="pref-acc"
     )
 
 # ===================== 主流程 =====================
@@ -73,21 +71,26 @@ GPT2_SMALL = "gpt2-small-124M"
 GPT2_MEDIUM = "gpt2-medium-355M"
 GPT2_LARGE = "gpt2-large-774M"
 
+# DPO 的起点是 SFT 之后的模型，不是原始预训练权重
+SFT_CKPT = "checkpoints/lightning/instruction/gpt2-medium-355M-sft-epoch=02-val_loss=0.736.ckpt"
+
 def main(smoke:bool = False,epochs_n:int=1):
-    model_name = GPT2_MEDIUM
+    model_name = GPT2_MEDIUM         # 与 SFT checkpoint 的规格保持一致
     L.seed_everything(123)
     # 本机显卡带 Tensor Core，允许 TF32 换性能,这里存储是FP32，lighting后面混合精度会在前向时候自动替换
     torch.set_float32_matmul_precision("high")
 
-    # 1) 加载模型 准备数据 初始化训练类 数据和权重基本检查
-    model = load_gpt2_model(model_name + ".pth")
-    train_loader, val_loader, test_loader = prepare_dataloader()
+    # 1) 加载 SFT 模型（policy 与 reference 各一份，权重相同） 准备数据 初始化训练类
+    #    两份必须是独立实例：policy 会被训练，reference 必须保持 SFT 那一刻的权重
+    model_policy = load_sft_model(SFT_CKPT, GPT2_MEDIUM + ".pth")
+    model_ref = load_sft_model(SFT_CKPT, GPT2_MEDIUM + ".pth")
+    train_loader,test_loader, val_loader = yeild_div_dataloader()
     # 用Lightning 初始化model的全部训练类，fit的逻辑都在这个类里。
-    lit_model = LightingInstructionSFT(model)
+    lit_model = LightingInstructionSFT(model_policy,model_ref)
     # fit前检查数据和model
     check_loader(train=train_loader, val=val_loader, test=test_loader)
     base_loss = check_model(lit_model, val_loader)
-    print(f"未训练 baseline: val loss {base_loss:.3f} (预训练权重正常应在 2~5)")
+    print(f"未训练 baseline: DPO loss {base_loss:.3f} (policy 与 ref 相同，应 ≈ 0.693)")
 
 
     # 2) checkpoint：只监控 val_loss，存最优一份
@@ -134,22 +137,7 @@ def main(smoke:bool = False,epochs_n:int=1):
     trainer.test(model=lit_model, dataloaders=test_loader, ckpt_path=checkpoint.best_model_path)
 
     # 5） 画曲线图
-    print(f"lit_model.history : {lit_model.history}")
     plot_history(lit_model.history, n_epochs)
 
 if __name__ == "__main__":
-    # 1. 创建参数解析器
-    parser = argparse.ArgumentParser(description="运行我的脚本")
-    # 2. 添加 smoke 参数 (使用 action='store_true'，只要命令行出现 --smoke 就视为 True)
-    parser.add_argument(
-        "--smoke", action="store_true", help="是否开启烟雾测试"
-    )
-    # 3. 添加 epochs_n 参数 (指定类型为 int，并设置默认值)
-    parser.add_argument(
-        "--epochs_n", type=int, default=1, help="训练的轮数 (Epochs)"
-    )
-    # 4. 解析控制台输入的参数
-    args = parser.parse_args()
-    # 5. 将解析后的参数传给 main 函数
-    # main(smoke=args.smoke, epochs_n=args.epochs_n)
-    main(False,3)
+    main(False,5)

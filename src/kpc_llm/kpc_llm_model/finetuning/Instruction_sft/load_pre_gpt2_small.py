@@ -93,6 +93,31 @@ def load_gpt2_model(file_name: str = GPT2_MEDIUM_FILE) -> GPTModel:
 
     return model
 
+def load_sft_model(ckpt_path: str, file_name: str = GPT2_SMALL_FILE) -> GPTModel:
+    """加载 Lightning 训练出的 SFT checkpoint（DPO 的 policy / reference 起点）。
+
+    Lightning 的 save_weights_only=True 存的是 LightingModule.state_dict()，
+    参数名带 "model." 前缀（因为模块里是 self.model = GPTModel(...)），这里剥掉再加载。
+    """
+    cnf = get_gpt2_cnf(file_name)
+    ch04_config = to_ch04_config(cnf)
+    model = GPTModel(ch04_config)
+
+    ckpt_file = Path(ckpt_path)
+    if not ckpt_file.exists():                      # 允许传项目相对路径
+        ckpt_file = get_project_root() / ckpt_file
+
+    ckpt = torch.load(ckpt_file, map_location="cpu", weights_only=False)
+    state = ckpt["state_dict"] if "state_dict" in ckpt else ckpt
+    prefix = "model."
+    sd = {k[len(prefix):]: v for k, v in state.items() if k.startswith(prefix)}
+    # strict=True：多一个或少一个参数都要报错，避免静默加载了半个模型
+    model.load_state_dict(sd, strict=True)
+
+    log.info(f"加载 SFT checkpoint: {ckpt_file} | {len(sd)} 个参数 | {cnf.cnf_name}")
+    return model.to(get_adaptive_device())
+
+
 def test():
     device = get_adaptive_device()
     m = load_gpt2_small_model().to(device)
